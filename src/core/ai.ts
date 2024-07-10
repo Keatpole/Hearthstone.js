@@ -3,14 +3,16 @@
  * @module AI
  */
 import { Card, Player } from "@Game/internal.js";
-import type {
-	AiCalcMoveOption,
-	AiHistory,
-	ScoredCard,
-	SelectTargetAlignment,
-	SelectTargetClass,
-	SelectTargetFlag,
-	Target,
+import {
+	type AiCalcMoveOption,
+	type AiHistory,
+	Keyword,
+	type ScoredCard,
+	type SelectTargetAlignment,
+	type SelectTargetClass,
+	type SelectTargetFlag,
+	type Target,
+	Type,
 } from "@Game/types.js";
 
 // TODO: Ai gets stuck in infinite loop when using cathedral of atonement (location) | shadowcloth needle (0 attack wpn) | that minion has no attack.
@@ -295,7 +297,7 @@ export class Ai {
 		if (flags.includes("allowLocations") && forceClass !== "hero") {
 			const locations = this.player.board.filter(
 				(m) =>
-					m.type === "Location" &&
+					m.type === Type.Location &&
 					m.cooldown === 0 &&
 					!this.usedLocationsThisTurn.includes(m),
 			);
@@ -373,8 +375,10 @@ export class Ai {
 			}
 
 			if (
-				(card && card.type === "Spell" && target.hasKeyword("Elusive")) ??
-				target.type === "Location"
+				(card &&
+					card.type === Type.Spell &&
+					target.hasKeyword(Keyword.Elusive)) ??
+				target.type === Type.Location
 			) {
 				continue;
 			}
@@ -774,7 +778,7 @@ export class Ai {
 
 		const validLocations = this.player.board.filter(
 			(m) =>
-				m.type === "Location" &&
+				m.type === Type.Location &&
 				m.cooldown === 0 &&
 				!this.usedLocationsThisTurn.includes(m),
 		);
@@ -905,7 +909,9 @@ export class Ai {
 	 * @returns The taunts on the board
 	 */
 	private _findTaunts(): Card[] {
-		return this.player.getOpponent().board.filter((m) => m.hasKeyword("Taunt"));
+		return this.player
+			.getOpponent()
+			.board.filter((m) => m.hasKeyword(Keyword.Taunt));
 	}
 
 	/**
@@ -1014,7 +1020,7 @@ export class Ai {
 
 		const target =
 			!this.focus ||
-			(this._findTaunts().length > 0 && !this.focus.hasKeyword("Taunt"))
+			(this._findTaunts().length > 0 && !this.focus.hasKeyword(Keyword.Taunt))
 				? this._attackGeneralChooseTarget()
 				: this.focus;
 

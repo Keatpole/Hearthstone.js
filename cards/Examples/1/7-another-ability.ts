@@ -1,18 +1,18 @@
 // Created by Hand
 
 import assert from "node:assert";
-import type { Ability, Blueprint } from "@Game/types.js";
+import type { AbilityCallback, Blueprint } from "@Game/types.js";
 
 /*
  * This is another way to write blueprints
  * You might want to do this if you make a very complicated card
  * however it is not _as_ supported by scripts as the default method.
  */
-const battlecry: Ability = (owner, self) => {
+const battlecry: AbilityCallback = (owner, self) => {
 	self.addStats(1, 1);
 };
 
-const theTestAbility: Ability = (owner, self) => {
+const theTestAbility: AbilityCallback = (owner, self) => {
 	self.activate("battlecry");
 
 	assert.equal((self.blueprint.attack ?? 0) + 1, self.attack);

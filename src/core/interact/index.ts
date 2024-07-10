@@ -10,11 +10,14 @@ import {
 	gameloopInteract,
 	infoInteract,
 } from "@Game/internal.js";
-import type {
-	SelectTargetAlignment,
-	SelectTargetClass,
-	SelectTargetFlag,
-	Target,
+import {
+	Event,
+	Keyword,
+	type SelectTargetAlignment,
+	type SelectTargetClass,
+	type SelectTargetFlag,
+	type Target,
+	Type,
 } from "@Game/types.js";
 
 export const interact = {
@@ -279,7 +282,7 @@ export const interact = {
 		flags: SelectTargetFlag[] = [],
 	): Target | false {
 		game.event.broadcast(
-			"TargetSelectionStarts",
+			Event.TargetSelectionStarts,
 			[prompt, card, forceSide, forceClass, flags],
 			game.player,
 		);
@@ -292,7 +295,7 @@ export const interact = {
 		);
 
 		if (target) {
-			game.event.broadcast("TargetSelected", [card, target], game.player);
+			game.event.broadcast(Event.TargetSelected, [card, target], game.player);
 		}
 
 		return target;
@@ -469,24 +472,24 @@ export const interact = {
 
 		// If the minion has elusive, and the card that called this function is a spell
 		if (
-			(card?.type === "Spell" ||
-				card?.type === "Heropower" ||
+			(card?.type === Type.Spell ||
+				card?.type === Type.HeroPower ||
 				flags.includes("forceElusive")) &&
-			minion.hasKeyword("Elusive")
+			minion.hasKeyword(Keyword.Elusive)
 		) {
 			game.pause("<red>Can't be targeted by Spells or Hero Powers.</red>\n");
 			return false;
 		}
 
 		// If the minion has stealth, don't allow the opponent to target it.
-		if (minion.hasKeyword("Stealth") && game.player !== minion.owner) {
+		if (minion.hasKeyword(Keyword.Stealth) && game.player !== minion.owner) {
 			game.pause("<red>This minion has stealth.</red>\n");
 
 			return false;
 		}
 
 		// If the minion is a location, don't allow it to be selected unless the `allowLocations` flag was set.
-		if (minion.type === "Location" && !flags.includes("allowLocations")) {
+		if (minion.type === Type.Location && !flags.includes("allowLocations")) {
 			game.pause("<red>You cannot target location cards.</red>\n");
 
 			return false;

@@ -1,4 +1,5 @@
 import { Card, type Player } from "@Game/internal.js";
+import { Ability, Type } from "@Game/types.js";
 
 export const cardInteract = {
 	/**
@@ -12,7 +13,7 @@ export const cardInteract = {
 		| "invalidtype"
 		| "cooldown"
 		| "refund" {
-		const locations = game.player.board.filter((m) => m.type === "Location");
+		const locations = game.player.board.filter((m) => m.type === Type.Location);
 		if (locations.length <= 0) {
 			return "nolocations";
 		}
@@ -27,7 +28,7 @@ export const cardInteract = {
 			return "refund";
 		}
 
-		if (location.type !== "Location") {
+		if (location.type !== Type.Location) {
 			return "invalidtype";
 		}
 
@@ -35,7 +36,7 @@ export const cardInteract = {
 			return "cooldown";
 		}
 
-		if (location.activate("use") === Card.REFUND) {
+		if (location.activate(Ability.Use) === Card.REFUND) {
 			return "refund";
 		}
 

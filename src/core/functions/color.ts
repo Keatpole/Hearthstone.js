@@ -1,4 +1,4 @@
-import type { CardRarity } from "@Game/types.js";
+import { Rarity } from "@Game/types.js";
 import chalk, { type ChalkInstance } from "chalk";
 import stripAnsi from "strip-ansi";
 
@@ -23,31 +23,31 @@ export const colorFunctions = {
 	 * const colored = fromRarity(card.name, card.rarity);
 	 * assert.equal(colored, chalk.yellow("Sheep"));
 	 */
-	fromRarity(text: string, rarity: CardRarity): string {
+	fromRarity(text: string, rarity: Rarity): string {
 		let newText = "";
 
 		switch (rarity) {
-			case "Free": {
+			case Rarity.Free: {
 				newText = text;
 				break;
 			}
 
-			case "Common": {
+			case Rarity.Common: {
 				newText = `<gray>${text}</gray>`;
 				break;
 			}
 
-			case "Rare": {
+			case Rarity.Rare: {
 				newText = `<blue>${text}</blue>`;
 				break;
 			}
 
-			case "Epic": {
+			case Rarity.Epic: {
 				newText = `<bright:magenta>${text}</bright:magenta>`;
 				break;
 			}
 
-			case "Legendary": {
+			case Rarity.Legendary: {
 				newText = `<yellow>${text}</yellow>`;
 				break;
 			}

@@ -1,5 +1,5 @@
 import type { Card, Player } from "@Game/internal.js";
-import type { Blueprint, EventKey } from "@Game/types.js";
+import type { Blueprint, Event } from "@Game/types.js";
 
 /**
  * Game.PlayCard return value
@@ -159,8 +159,8 @@ export type GameConfig = {
 
 		forgetfulRandomTargetFailAmount: number;
 
-		whitelistedHistoryKeys: EventKey[];
-		hideValueHistoryKeys: EventKey[];
+		whitelistedHistoryKeys: Event[];
+		hideValueHistoryKeys: Event[];
 	};
 
 	info: {

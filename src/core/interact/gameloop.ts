@@ -1,6 +1,12 @@
 import { format } from "node:util";
 import { type Ai, Card, commands, debugCommands } from "@Game/internal.js";
-import type { GamePlayCardReturn, Target } from "@Game/types.js";
+import {
+	Ability,
+	CostType,
+	Event,
+	type GamePlayCardReturn,
+	type Target,
+} from "@Game/types.js";
 import rl from "readline-sync";
 
 const overrideConsole = {
@@ -50,7 +56,7 @@ export const gameloopInteract = {
 		let question = q;
 
 		const wrapper = (a: string) => {
-			game.event.broadcast("Input", a, game.player);
+			game.event.broadcast(Event.Input, a, game.player);
 			return a;
 		};
 
@@ -346,7 +352,7 @@ export const gameloopInteract = {
 		}
 
 		if (parsedInput === game.player.hand.length || parsedInput === 1) {
-			card.activate("outcast");
+			card.activate(Ability.Outcast);
 		}
 
 		return game.play(card, game.player);
@@ -360,7 +366,7 @@ export const gameloopInteract = {
 	 * @returns Success | Ignored error code | The return value of doTurnLogic
 	 */
 	doTurn(): boolean | string | GamePlayCardReturn {
-		game.event.tick("GameLoop", "doTurn", game.player);
+		game.event.tick(Event.GameLoop, "doTurn", game.player);
 
 		if (game.player.ai) {
 			const rawInput = game.player.ai.calcMove();
@@ -374,7 +380,7 @@ export const gameloopInteract = {
 					: rawInput;
 			const turn = this.doTurnLogic(input);
 
-			game.event.broadcast("Input", input, game.player);
+			game.event.broadcast(Event.Input, input, game.player);
 			return turn;
 		}
 
@@ -401,7 +407,7 @@ export const gameloopInteract = {
 		const card = game.player.hand[game.lodash.parseInt(user) - 1];
 		let cost = "mana";
 		if (card) {
-			cost = card.costType;
+			cost = CostType[card.costType].toLowerCase();
 		}
 
 		// Error Codes

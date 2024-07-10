@@ -6,6 +6,7 @@
 
 import process from "node:process";
 import { Card, type Player, createGame } from "@Game/internal.js";
+import { Ability } from "@Game/types.js";
 
 const { game } = createGame();
 const cards = Card.all(true);
@@ -19,7 +20,7 @@ const cards = Card.all(true);
  */
 function testCard(card: Card): boolean | Error {
 	try {
-		card.activate("test");
+		card.activate(Ability.Test);
 	} catch (error) {
 		if (error instanceof Error) {
 			return error;

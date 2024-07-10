@@ -1,15 +1,15 @@
 // Created by Hand (before the Card Creator Existed)
 
 import assert from "node:assert";
-import type { Blueprint } from "@Game/types.js";
+import { type Blueprint, Rarity, Type } from "@Game/types.js";
 
 export const blueprint: Blueprint = {
 	name: "The Coin",
 	text: "Gain 1 Mana Crystal this turn only.",
 	cost: 0,
-	type: "Spell",
+	type: Type.Spell,
 	classes: ["Neutral"],
-	rarity: "Free",
+	rarity: Rarity.Free,
 	collectible: false,
 	id: 2,
 

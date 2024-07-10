@@ -1,5 +1,5 @@
 import type { Card, Player } from "@Game/internal.js";
-import type { EventKey, UnknownEventValue } from "@Game/types.js";
+import type { Event, UnknownEventValue } from "@Game/types.js";
 import type { Card as _VanillaCard } from "@hearthstonejs/vanillatypes";
 
 export type VanillaCard = _VanillaCard;
@@ -15,150 +15,156 @@ export type ScoredCard = {
 /**
  * The type of the card.
  */
-export type CardType =
-	| "Minion"
-	| "Spell"
-	| "Weapon"
-	| "Hero"
-	| "Location"
-	| "Heropower"
-	| "Undefined";
-
-/**
- * The class that the card belongs to. (without "Neutral")
- */
-export type CardClassNoNeutral =
-	| "Death Knight"
-	| "Demon Hunter"
-	| "Druid"
-	| "Hunter"
-	| "Mage"
-	| "Paladin"
-	| "Priest"
-	| "Rogue"
-	| "Shaman"
-	| "Warlock"
-	| "Warrior";
+export enum Type {
+	Undefined = 0,
+	Minion = 1,
+	Spell = 2,
+	Weapon = 3,
+	Hero = 4,
+	HeroPower = 5,
+	Location = 6,
+}
 
 /**
  * The class that the card belongs to.
  */
-export type CardClass = CardClassNoNeutral | "Neutral";
+export enum Class {
+	Neutral = 0,
+	DeathKnight = 0,
+	DemonHunter = 1,
+	Druid = 2,
+	Hunter = 3,
+	Mage = 4,
+	Paladin = 5,
+	Priest = 6,
+	Rogue = 7,
+	Shaman = 8,
+	Warlock = 9,
+	Warrior = 10,
+}
 
 /**
  * The rarity of the card.
  */
-export type CardRarity = "Free" | "Common" | "Rare" | "Epic" | "Legendary";
+export enum Rarity {
+	Free = 0,
+	Common = 1,
+	Rare = 2,
+	Epic = 3,
+	Legendary = 4,
+}
 
 /**
  * What the card costs.
  */
-export type CostType = "mana" | "armor" | "health";
+export enum CostType {
+	Mana = 0,
+	Armor = 1,
+	Health = 2,
+}
 
 /**
  * The school of the spell.
  */
-export type SpellSchool =
-	| "Arcane"
-	| "Fel"
-	| "Fire"
-	| "Frost"
-	| "Holy"
-	| "Nature"
-	| "Shadow"
-	| "None";
+export enum SpellSchool {
+	None = 0,
+	Arcane = 1,
+	Fel = 2,
+	Fire = 3,
+	Frost = 4,
+	Holy = 5,
+	Nature = 6,
+	Shadow = 7,
+}
 
 /**
  * The tribe of the minion.
  */
-export type MinionTribe =
-	| "Beast"
-	| "Demon"
-	| "Dragon"
-	| "Elemental"
-	| "Mech"
-	| "Murloc"
-	| "Naga"
-	| "Pirate"
-	| "Quilboar"
-	| "Totem"
-	| "Undead"
-	| "All"
-	| "None";
+export enum Tribe {
+	None = 0,
+	All = 1,
+	Beast = 2,
+	Demon = 3,
+	Dragon = 4,
+	Elemental = 5,
+	Mech = 6,
+	Murloc = 7,
+	Naga = 8,
+	Pirate = 9,
+	Quilboar = 10,
+	Totem = 11,
+	Undead = 12,
+}
 
 /**
  * Card keywords.
  */
-export type CardKeyword =
-	| "Divine Shield"
-	| "Dormant"
-	| "Lifesteal"
-	| "Poisonous"
-	| "Reborn"
-	| "Rush"
-	| "Stealth"
-	| "Taunt"
-	| "Tradeable"
-	| "Forge"
-	| "Windfury"
-	| "Outcast"
-	| "Cast On Draw"
-	| "Summon On Draw"
-	| "Unbreakable"
-	| "Unlimited Attacks"
-	| "Charge"
-	| "Mega-Windfury"
-	| "Echo"
-	| "Magnetic"
-	| "Twinspell"
-	| "Elusive"
-	| "Frozen"
-	| "Immune"
-	| "Corrupt"
-	| "Colossal"
-	| "Infuse"
-	| "Cleave"
-	| "Titan"
-	| "Forgetful"
-	| "Cant Attack";
-
-/**
- * Card abilities that is from vanilla Hearthstone.
- */
-export type CardAbilityReal =
-	| "adapt"
-	| "battlecry"
-	| "cast"
-	| "combo"
-	| "deathrattle"
-	| "finale"
-	| "frenzy"
-	| "honorablekill"
-	| "infuse"
-	| "inspire"
-	| "invoke"
-	| "outcast"
-	| "overheal"
-	| "overkill"
-	| "passive"
-	| "spellburst"
-	| "startofgame"
-	| "heropower"
-	| "use";
+export enum Keyword {
+	DivineShield = 0,
+	Dormant = 1,
+	Lifesteal = 2,
+	Poisonous = 3,
+	Reborn = 4,
+	Rush = 5,
+	Stealth = 6,
+	Taunt = 7,
+	Tradeable = 8,
+	Forge = 9,
+	Windfury = 10,
+	Outcast = 11,
+	CastOnDraw = 12,
+	SummonOnDraw = 13,
+	Unbreakable = 14,
+	UnlimitedAttacks = 15,
+	Charge = 16,
+	MegaWindfury = 17,
+	Echo = 18,
+	Magnetic = 19,
+	Twinspell = 20,
+	Elusive = 21,
+	Frozen = 22,
+	Immune = 23,
+	Corrupt = 24,
+	Colossal = 25,
+	Infuse = 26,
+	Cleave = 27,
+	Titan = 28,
+	Forgetful = 29,
+	CantAttack = 30,
+}
 
 /**
  * All Card abilities.
  */
-export type CardAbility =
-	| CardAbilityReal
-	| "placeholders"
-	| "condition"
-	| "remove"
-	| "handpassive"
-	| "tick"
-	| "handtick"
-	| "test"
-	| "create";
+export enum Ability {
+	Create = 0,
+	Adapt = 1,
+	Battlecry = 2,
+	Cast = 3,
+	Combo = 4,
+	Deathrattle = 5,
+	Finale = 6,
+	Frenzy = 7,
+	HonorableKill = 8,
+	Infuse = 9,
+	Inspire = 10,
+	Invoke = 11,
+	Outcast = 12,
+	Overheal = 13,
+	Overkill = 14,
+	Passive = 15,
+	Spellburst = 16,
+	StartOfGame = 17,
+	HeroPower = 18,
+	Use = 19,
+	Placeholders = 20,
+	Condition = 21,
+	Remove = 22,
+	HandPassive = 23,
+	Tick = 24,
+	HandTick = 25,
+	Test = 26,
+}
 
 /**
  * Card Enchantment object.
@@ -178,10 +184,10 @@ export type CardBackup = {
 /**
  * The ability of a card.
  */
-export type Ability = (
+export type AbilityCallback = (
 	owner: Player,
 	self: Card,
-	key?: EventKey,
+	key?: Event,
 	_unknownValue?: UnknownEventValue,
 	eventPlayer?: Player,
 ) => unknown;
@@ -190,7 +196,7 @@ export type Ability = (
  * The abilities that a blueprint can have. (From CardAbility)
  */
 type BlueprintAbilities = {
-	[Property in CardAbility]?: Ability;
+	[Property in Ability]?: AbilityCallback;
 };
 
 /**
@@ -213,11 +219,11 @@ export type Blueprint = {
 	/** How much the card should cost. This is normally in mana. */
 	cost: number;
 	/** The type of the card. For example; "Minion" / "Spell" / "Weapon", etc... */
-	type: CardType;
+	type: Type;
 	/** The classes that the card belongs to. For example; ["Neutral"], ["Mage"], ["Paladin", "Rogue"] */
-	classes: CardClass[];
+	classes: Class[];
 	/** The rarity of the card. This doesn't really do much in this game since there isn't any lootbox mechanics here. Examples of rarities: "Legendary", "Epic", "Free", etc... */
-	rarity: CardRarity;
+	rarity: Rarity;
 	/** If the card should be allowed in decks / card pools. */
 	collectible: boolean;
 	/**
@@ -247,7 +253,7 @@ export type Blueprint = {
 	 *
 	 * The tribe of the card. For example; "Beast", "Naga", "All", "None", etc...
 	 */
-	tribe?: MinionTribe;
+	tribe?: Tribe;
 
 	/**
 	 * ### This is required for Spells
@@ -291,5 +297,5 @@ export type Blueprint = {
 
 export type BlueprintWithOptional = Blueprint & {
 	runes?: string;
-	keywords?: CardKeyword[];
+	keywords?: Keyword[];
 };

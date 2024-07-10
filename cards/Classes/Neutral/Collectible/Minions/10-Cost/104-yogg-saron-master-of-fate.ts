@@ -151,7 +151,7 @@ export const blueprint: Blueprint = {
 			// No default
 		}
 
-		game.event.broadcast("CardEvent", [self, choice], owner);
+		game.event.broadcast(Event.CardEvent, [self, choice], owner);
 	},
 
 	placeholders(owner, self) {

@@ -4,15 +4,15 @@
  */
 
 import { createGame } from "@Game/internal.js";
-import type {
-	Blueprint,
-	BlueprintWithOptional,
-	CardClass,
-	CardKeyword,
-	CardRarity,
-	CardType,
-	MinionTribe,
-	SpellSchool,
+import {
+	type Blueprint,
+	type BlueprintWithOptional,
+	type Class,
+	type Keyword,
+	type Rarity,
+	type SpellSchool,
+	type Tribe,
+	Type,
 } from "@Game/types.js";
 import rl from "readline-sync";
 import * as lib from "./lib.js";
@@ -20,7 +20,7 @@ import * as lib from "./lib.js";
 const { player1, game } = createGame();
 
 let shouldExit = false;
-let type: CardType;
+let type: Type;
 
 /**
  * Asks the user a question and returns the result.
@@ -99,8 +99,8 @@ function common(): BlueprintWithOptional {
 	const name = input("Name: ");
 	const text = input("Text: ");
 	const cost = game.lodash.parseInt(input("Cost: "));
-	const classes = input("Classes: ") as CardClass;
-	const rarity = input("Rarity: ") as CardRarity;
+	const classes = input("Classes: ") as Class;
+	const rarity = input("Rarity: ") as Rarity;
 	const keywords = input("Keywords: ");
 
 	player1.heroClass = classes;
@@ -110,9 +110,9 @@ function common(): BlueprintWithOptional {
 		runes = input("Runes: ");
 	}
 
-	let realKeywords: CardKeyword[] | undefined;
+	let realKeywords: Keyword[] | undefined;
 	if (keywords) {
-		realKeywords = keywords.split(", ") as CardKeyword[];
+		realKeywords = keywords.split(", ") as Keyword[];
 	}
 
 	return {
@@ -129,13 +129,13 @@ function common(): BlueprintWithOptional {
 	};
 }
 
-const cardTypeFunctions: { [x in CardType]: () => Blueprint } = {
-	Minion(): Blueprint {
+const cardTypeFunctions: { [x in Type]: () => Blueprint } = {
+	[Type.Minion](): Blueprint {
 		const card = common();
 
 		const attack = game.lodash.parseInt(input("Attack: "));
 		const health = game.lodash.parseInt(input("Health: "));
-		const tribe = input("Tribe: ") as MinionTribe;
+		const tribe = input("Tribe: ") as Tribe;
 
 		return applyCard({
 			...card,
@@ -145,7 +145,7 @@ const cardTypeFunctions: { [x in CardType]: () => Blueprint } = {
 		});
 	},
 
-	Spell(): Blueprint {
+	[Type.Spell](): Blueprint {
 		const card = common();
 
 		const spellSchool = input("Spell School: ") as SpellSchool;
@@ -156,7 +156,7 @@ const cardTypeFunctions: { [x in CardType]: () => Blueprint } = {
 		});
 	},
 
-	Weapon(): Blueprint {
+	[Type.Weapon](): Blueprint {
 		const card = common();
 
 		const attack = game.lodash.parseInt(input("Attack: "));
@@ -169,7 +169,7 @@ const cardTypeFunctions: { [x in CardType]: () => Blueprint } = {
 		});
 	},
 
-	Hero(): Blueprint {
+	[Type.Hero](): Blueprint {
 		const card = common();
 
 		const armor = game.lodash.parseInt(game.input("Armor (Default: 5):")) ?? 5;
@@ -186,7 +186,7 @@ const cardTypeFunctions: { [x in CardType]: () => Blueprint } = {
 		});
 	},
 
-	Location(): Blueprint {
+	[Type.Location](): Blueprint {
 		const card = common();
 
 		const durability = game.lodash.parseInt(
@@ -204,13 +204,13 @@ const cardTypeFunctions: { [x in CardType]: () => Blueprint } = {
 		});
 	},
 
-	Heropower(): Blueprint {
+	[Type.HeroPower](): Blueprint {
 		const card = common();
 
 		return applyCard(card);
 	},
 
-	Undefined(): Blueprint {
+	[Type.Undefined](): Blueprint {
 		throw new TypeError("Undefined type");
 	},
 };
@@ -229,7 +229,7 @@ export function main(debug = false, overrideType?: lib.CcType): string | false {
 	console.log("type 'back' at any step to cancel.\n");
 
 	// Ask the user for the type of card they want to make
-	type = game.lodash.startCase(input("Type: ")) as CardType;
+	type = game.lodash.startCase(input("Type: ")) as Type;
 	if (shouldExit) {
 		return false;
 	}

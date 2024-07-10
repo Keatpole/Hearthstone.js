@@ -4,23 +4,23 @@
  */
 import { randomUUID } from "node:crypto";
 import type { Player } from "@Game/internal.js";
-import type {
+import {
 	Ability,
-	Blueprint,
-	CardAbility,
-	CardBackup,
-	CardClass,
-	CardKeyword,
-	CardRarity,
-	CardType,
+	type AbilityCallback,
+	type Blueprint,
+	type CardBackup,
+	Class,
 	CostType,
-	EnchantmentDefinition,
-	EventKey,
-	GameConfig,
-	MinionTribe,
-	SpellSchool,
-	Target,
-	UnknownEventValue,
+	type EnchantmentDefinition,
+	Event,
+	type GameConfig,
+	Keyword,
+	Rarity,
+	type SpellSchool,
+	type Target,
+	type Tribe,
+	Type,
+	type UnknownEventValue,
 } from "@Game/types.js";
 
 /**
@@ -60,17 +60,17 @@ export class Card {
 	/**
 	 * This is the class that the card belongs to. E.g. "Warlock" or "Mage".
 	 */
-	classes: CardClass[] = ["Neutral"];
+	classes: Class[] = [Class.Neutral];
 
 	/**
 	 * This is the type of card, e.g. "Spell" or "Minion".
 	 */
-	type: CardType = "Undefined";
+	type: Type = Type.Undefined;
 
 	/**
 	 * This is the rarity of the card. E.g. "Common" | "Rare" | etc...
 	 */
-	rarity: CardRarity = "Free";
+	rarity: Rarity = Rarity.Free;
 
 	/**
 	 * The id tied to the blueprint of the card.
@@ -98,7 +98,7 @@ export class Card {
 	/**
 	 * The keywords that the card has. E.g. ["Taunt", "Divine Shield", etc...]
 	 */
-	keywords: { [key in CardKeyword]?: unknown } = {};
+	keywords: { [key in Keyword]?: unknown } = {};
 
 	/**
 	 * The card's blueprint.
@@ -114,7 +114,7 @@ export class Card {
 	/**
 	 * The tribe the card belongs to.
 	 */
-	tribe?: MinionTribe;
+	tribe?: Tribe;
 
 	/**
 	 * The number of times a minion can attack in a turn;
@@ -172,7 +172,7 @@ export class Card {
 	 *
 	 * This can be any value, as long as it is a defined _number_ in the `Player` class.
 	 */
-	costType: CostType = "mana";
+	costType: CostType = CostType.Mana;
 
 	/**
 	 * Information stored in the card.
@@ -287,7 +287,7 @@ export class Card {
 	/**
 	 * The abilities of the card (battlecry, deathrattle, etc...)
 	 */
-	abilities: { [key in CardAbility]?: Ability[] } = {};
+	abilities: { [key in Ability]?: AbilityCallback[] } = {};
 
 	/**
 	 * Create a card.
@@ -321,14 +321,14 @@ export class Card {
 		this.doBlueprint(false);
 		this.randomizeUUID();
 
-		const placeholder = this.activate("placeholders");
+		const placeholder = this.activate(Ability.Placeholders);
 
 		// This is a list of replacements.
 		if (Array.isArray(placeholder)) {
 			this.placeholder = placeholder[0] as Record<string, string>;
 		}
 
-		this.activate("create");
+		this.activate(Ability.Create);
 		this.replacePlaceholders();
 
 		/*
@@ -346,10 +346,10 @@ export class Card {
 
 		let unsuppress: undefined | (() => boolean);
 		if (suppressEvent) {
-			unsuppress = game.functions.event.suppress("CreateCard");
+			unsuppress = game.functions.event.suppress(Event.CreateCard);
 		}
 
-		game.event.broadcast("CreateCard", this, this.owner);
+		game.event.broadcast(Event.CreateCard, this, this.owner);
 
 		if (unsuppress) {
 			unsuppress();
@@ -542,7 +542,7 @@ export class Card {
 			const [key, value] = entry;
 
 			if (typeof value === "function") {
-				this.abilities[key as CardAbility] = [value];
+				this.abilities[key as Ability] = [value];
 			} else {
 				this[key as keyof this] = JSON.parse(JSON.stringify(entry[1]));
 			}
@@ -557,7 +557,7 @@ export class Card {
 
 		this.text = game.functions.color.fromTags(this.text || "");
 		if (activate) {
-			this.activate("create");
+			this.activate(Ability.Create);
 		}
 	}
 
@@ -569,7 +569,7 @@ export class Card {
 	 *
 	 * @returns Success
 	 */
-	addAbility(ability: CardAbility, callback: Ability): boolean {
+	addAbility(ability: Ability, callback: AbilityCallback): boolean {
 		if (!this.abilities[ability]) {
 			this.abilities[ability] = [];
 		}
@@ -582,7 +582,7 @@ export class Card {
 
 	// Keywords
 
-	hasKeyword(keyword: CardKeyword): boolean {
+	hasKeyword(keyword: Keyword): boolean {
 		return Object.keys(this.keywords).includes(keyword);
 	}
 
@@ -593,7 +593,7 @@ export class Card {
 	 *
 	 * @returns Success
 	 */
-	addKeyword(keyword: CardKeyword, info?: unknown): boolean {
+	addKeyword(keyword: Keyword, info?: unknown): boolean {
 		if (this.hasKeyword(keyword)) {
 			return false;
 		}
@@ -601,26 +601,26 @@ export class Card {
 		this.keywords[keyword] = info;
 
 		switch (keyword) {
-			case "Charge": {
+			case Keyword.Charge: {
 				this.ready();
 
 				break;
 			}
 
-			case "Rush": {
+			case Keyword.Rush: {
 				this.ready();
 				this.canAttackHero = false;
 
 				break;
 			}
 
-			case "Cant Attack": {
+			case Keyword.CantAttack: {
 				this.sleepy = true;
 
 				break;
 			}
 
-			case "Unlimited Attacks": {
+			case Keyword.UnlimitedAttacks: {
 				this.ready();
 				this.resetAttackTimes();
 
@@ -646,7 +646,7 @@ export class Card {
 	 *
 	 * @returns Success
 	 */
-	remKeyword(keyword: CardKeyword): boolean {
+	remKeyword(keyword: Keyword): boolean {
 		if (!this.hasKeyword(keyword)) {
 			return false;
 		}
@@ -661,7 +661,7 @@ export class Card {
 	 *
 	 * @returns The info
 	 */
-	getKeyword(keyword: CardKeyword): unknown | false {
+	getKeyword(keyword: Keyword): unknown | false {
 		if (!this.hasKeyword(keyword)) {
 			return false;
 		}
@@ -674,7 +674,7 @@ export class Card {
 	 *
 	 * @returns Success
 	 */
-	setKeyword(keyword: CardKeyword, info: unknown): boolean {
+	setKeyword(keyword: Keyword, info: unknown): boolean {
 		if (!this.hasKeyword(keyword)) {
 			return false;
 		}
@@ -691,9 +691,9 @@ export class Card {
 	 * @returns Success
 	 */
 	freeze(): boolean {
-		this.addKeyword("Frozen");
+		this.addKeyword(Keyword.Frozen);
 
-		game.event.broadcast("FreezeCard", this, this.owner);
+		game.event.broadcast(Event.FreezeCard, this, this.owner);
 
 		return true;
 	}
@@ -708,7 +708,7 @@ export class Card {
 			return false;
 		}
 
-		if (this.hasKeyword("Unlimited Attacks")) {
+		if (this.hasKeyword(Keyword.UnlimitedAttacks)) {
 			return false;
 		}
 
@@ -734,7 +734,7 @@ export class Card {
 		 * If the card can't attack, prevent it from being ready
 		 * This will show the card as being "Exhausted" when you play it which is not exactly correct, but it's fine for now
 		 */
-		if (this.hasKeyword("Cant Attack")) {
+		if (this.hasKeyword(Keyword.CantAttack)) {
 			return false;
 		}
 
@@ -840,15 +840,15 @@ export class Card {
 			// Too much health
 
 			// Overheal keyword
-			this.activate("overheal");
+			this.activate(Ability.Overheal);
 
 			this.health = this.maxHealth ?? -1;
 
 			if (this.health > before) {
-				game.event.broadcast("HealthRestored", this.maxHealth, this.owner);
+				game.event.broadcast(Event.HealthRestored, this.maxHealth, this.owner);
 			}
 		} else if (this.health > before) {
-			game.event.broadcast("HealthRestored", this.health, this.owner);
+			game.event.broadcast(Event.HealthRestored, this.health, this.owner);
 		}
 
 		return true;
@@ -869,22 +869,22 @@ export class Card {
 		}
 
 		// Don't allow location cards to be damaged
-		if (this.type === "Location") {
+		if (this.type === Type.Location) {
 			return false;
 		}
 
-		if (this.hasKeyword("Stealth")) {
+		if (this.hasKeyword(Keyword.Stealth)) {
 			return false;
 		}
 
-		if (this.hasKeyword("Immune")) {
+		if (this.hasKeyword(Keyword.Immune)) {
 			return true;
 		}
 
 		this.setStats(this.attack, this.health - amount);
-		game.event.broadcast("DamageCard", [this, amount], this.owner);
+		game.event.broadcast(Event.DamageCard, [this, amount], this.owner);
 
-		if (this.type === "Weapon" && !this.isAlive()) {
+		if (this.type === Type.Weapon && !this.isAlive()) {
 			this.owner.destroyWeapon();
 		}
 
@@ -943,11 +943,11 @@ export class Card {
 	resetAttackTimes(): boolean {
 		this.attackTimes = 1;
 
-		if (this.hasKeyword("Windfury")) {
+		if (this.hasKeyword(Keyword.Windfury)) {
 			this.attackTimes = 2;
 		}
 
-		if (this.hasKeyword("Mega-Windfury")) {
+		if (this.hasKeyword(Keyword.MegaWindfury)) {
 			this.attackTimes = 4;
 		}
 
@@ -958,24 +958,24 @@ export class Card {
 	 * @returns If this card can attack.
 	 */
 	canAttack(): boolean {
-		if (this.type === "Weapon") {
+		if (this.type === Type.Weapon) {
 			return (this.attackTimes ?? 0) > 0;
 		}
 
-		if (this.type !== "Minion") {
+		if (this.type !== Type.Minion) {
 			return false;
 		}
 
-		if (this.getKeyword("Titan") as number[] | false) {
+		if (this.getKeyword(Keyword.Titan) as number[] | false) {
 			// The card still has titan cards
 			return false;
 		}
 
 		const booleans =
 			!this.sleepy &&
-			!this.hasKeyword("Frozen") &&
-			!this.hasKeyword("Dormant") &&
-			!this.hasKeyword("Cant Attack");
+			!this.hasKeyword(Keyword.Frozen) &&
+			!this.hasKeyword(Keyword.Dormant) &&
+			!this.hasKeyword(Keyword.CantAttack);
 		const numbers = (this.attack ?? 0) > 0 && (this.attackTimes ?? 0) > 0;
 
 		return booleans && numbers;
@@ -986,9 +986,9 @@ export class Card {
 	 */
 	canBeAttacked(): boolean {
 		return (
-			!this.hasKeyword("Dormant") &&
-			!this.hasKeyword("Immune") &&
-			!this.hasKeyword("Stealth")
+			!this.hasKeyword(Keyword.Dormant) &&
+			!this.hasKeyword(Keyword.Immune) &&
+			!this.hasKeyword(Keyword.Stealth)
 		);
 	}
 
@@ -1060,7 +1060,7 @@ export class Card {
 		 * The false tells the minion that this is the last time it will call remove
 		 * so it should finish whatever it is doing.
 		 */
-		const removeReturn = this.activate("remove", "SilenceCard");
+		const removeReturn = this.activate(Ability.Remove, "SilenceCard");
 
 		// If the remove function returned false, then we should not silence.
 		if (Array.isArray(removeReturn) && removeReturn[0] === false) {
@@ -1069,7 +1069,7 @@ export class Card {
 
 		// Remove abilities from the card.
 		for (const ability of Object.keys(this.abilities)) {
-			this.abilities[ability as CardAbility] = [];
+			this.abilities[ability as Ability] = [];
 		}
 
 		for (const key of Object.keys(this)) {
@@ -1109,7 +1109,7 @@ export class Card {
 		// Remove active enchantments.
 		this.applyEnchantments();
 
-		game.event.broadcast("SilenceCard", this, this.owner);
+		game.event.broadcast(Event.SilenceCard, this, this.owner);
 
 		game.killCardsOnBoard();
 		return true;
@@ -1128,7 +1128,9 @@ export class Card {
 	 */
 	reset(): void {
 		// Silence it to remove any new abilities
-		game.functions.event.withSuppressed("SilenceCard", () => this.silence());
+		game.functions.event.withSuppressed(Event.SilenceCard, () =>
+			this.silence(),
+		);
 		this.restoreBackup(this.backups.init);
 	}
 
@@ -1157,8 +1159,8 @@ export class Card {
 	 * @returns All the return values of the method keywords
 	 */
 	activate(
-		name: CardAbility,
-		key?: EventKey | string | undefined,
+		name: Ability,
+		key?: Event | string | undefined,
 		_unknownValue?: UnknownEventValue,
 		eventPlayer?: Player,
 	): unknown[] | -1 | false {
@@ -1168,7 +1170,7 @@ export class Card {
 		 * Do: this.cast.forEach(castFunc => castFunc(owner, card))
 		 * Returns a list of the return values from all the function calls
 		 */
-		const ability: Ability[] | undefined = this.abilities[name];
+		const ability: AbilityCallback[] | undefined = this.abilities[name];
 
 		// If the card has the function
 		if (!ability) {
@@ -1185,7 +1187,7 @@ export class Card {
 			const result = callback(
 				this.owner,
 				this,
-				key as EventKey,
+				key as Event,
 				_unknownValue,
 				eventPlayer,
 			);
@@ -1194,12 +1196,12 @@ export class Card {
 			}
 
 			// Deathrattle isn't cancellable
-			if (result !== Card.REFUND || name === "deathrattle") {
+			if (result !== Card.REFUND || name === Ability.Deathrattle) {
 				continue;
 			}
 
 			// If the return value is -1, meaning "refund", refund the card and stop the for loop
-			game.event.broadcast("CancelCard", [this, name], this.owner);
+			game.event.broadcast(Event.CancelCard, [this, name], this.owner);
 
 			returnValue = Card.REFUND;
 
@@ -1212,7 +1214,7 @@ export class Card {
 			 * We have to suppress inside the loop in order to not have the event suppressed when calling the ability
 			 * It's a bit hacky, and not very efficient, but it works
 			 */
-			game.functions.event.withSuppressed("AddCardToHand", () =>
+			game.functions.event.withSuppressed(Event.AddCardToHand, () =>
 				this.owner.addToHand(this),
 			);
 
@@ -1245,7 +1247,7 @@ export class Card {
 		const returnValue = game.functions.util.remove(player.hand, this);
 
 		if (returnValue) {
-			game.event.broadcast("DiscardCard", this, player);
+			game.event.broadcast(Event.DiscardCard, this, player);
 		}
 
 		return returnValue;
@@ -1266,7 +1268,7 @@ export class Card {
 		this.text = this.text.replace(clearedTextAlternative, "");
 
 		// Check if the condition is met
-		const condition = this.activate("condition");
+		const condition = this.activate(Ability.Condition);
 		if (!Array.isArray(condition) || condition[0] === false) {
 			return false;
 		}
@@ -1519,7 +1521,7 @@ export class Card {
 			return false;
 		}
 
-		const temporaryPlaceholder = this.activate("placeholders");
+		const temporaryPlaceholder = this.activate(Ability.Placeholders);
 		if (!Array.isArray(temporaryPlaceholder)) {
 			return false;
 		}
@@ -1656,14 +1658,14 @@ export class Card {
 	 * @returns If the card specified has the ability to appear on the board.
 	 */
 	canBeOnBoard(): boolean {
-		return this.type === "Minion" || this.type === "Location";
+		return this.type === Type.Minion || this.type === Type.Location;
 	}
 
 	/**
 	 * @returns If this card has stats
 	 */
 	hasStats(): boolean {
-		return this.type === "Minion" || this.type === "Weapon";
+		return this.type === Type.Minion || this.type === Type.Weapon;
 	}
 
 	/**
@@ -1689,7 +1691,7 @@ export class Card {
 	validateForDeck(): true | "class" | "uncollectible" | "runes" {
 		if (!this.classes.includes(this.owner.heroClass)) {
 			// If it is a neutral card, it is valid
-			if (this.classes.includes("Neutral")) {
+			if (this.classes.includes(Class.Neutral)) {
 				// Valid
 			} else {
 				return "class";
@@ -1771,7 +1773,7 @@ export class Card {
 
 		switch (choice) {
 			case "Crackling Shield": {
-				this.addKeyword("Divine Shield");
+				this.addKeyword(Keyword.DivineShield);
 				break;
 			}
 
@@ -1781,7 +1783,7 @@ export class Card {
 			}
 
 			case "Living Spores": {
-				this.addAbility("deathrattle", (owner, _) => {
+				this.addAbility(Ability.Deathrattle, (owner, _) => {
 					owner.summon(new Card(game.cardIds.plant3, owner));
 					owner.summon(new Card(game.cardIds.plant3, owner));
 				});
@@ -1789,17 +1791,17 @@ export class Card {
 			}
 
 			case "Lightning Speed": {
-				this.addKeyword("Windfury");
+				this.addKeyword(Keyword.Windfury);
 				break;
 			}
 
 			case "Liquid Membrane": {
-				this.addKeyword("Elusive");
+				this.addKeyword(Keyword.Windfury);
 				break;
 			}
 
 			case "Massive": {
-				this.addKeyword("Taunt");
+				this.addKeyword(Keyword.Taunt);
 				break;
 			}
 
@@ -1814,13 +1816,13 @@ export class Card {
 			}
 
 			case "Shrouding Mist": {
-				this.addKeyword("Stealth");
+				this.addKeyword(Keyword.Stealth);
 				this.setStealthDuration(1);
 				break;
 			}
 
 			case "Poison Spit": {
-				this.addKeyword("Poisonous");
+				this.addKeyword(Keyword.Poisonous);
 				break;
 			}
 
@@ -1856,19 +1858,19 @@ export class Card {
 	 * @returns Success
 	 */
 	tryInfuse(): boolean {
-		const infuse = this.getKeyword("Infuse") as number | undefined;
+		const infuse = this.getKeyword(Keyword.Infuse) as number | undefined;
 		if (!infuse || infuse <= 0) {
 			return false;
 		}
 
 		const newInfuse = infuse - 1;
 
-		this.setKeyword("Infuse", newInfuse);
+		this.setKeyword(Keyword.Infuse, newInfuse);
 		if (newInfuse > 0) {
 			return false;
 		}
 
-		this.activate("infuse");
+		this.activate(Ability.Infuse);
 		return true;
 	}
 
@@ -1963,17 +1965,17 @@ export class Card {
 		let cost = `{${this.cost}} `;
 
 		switch (this.costType) {
-			case "mana": {
+			case CostType.Mana: {
 				cost = `<cyan>${cost}</cyan>`;
 				break;
 			}
 
-			case "armor": {
+			case CostType.Armor: {
 				cost = `<gray>${cost}</gray>`;
 				break;
 			}
 
-			case "health": {
+			case CostType.Health: {
 				cost = `<red>${cost}</red>`;
 				break;
 			}
@@ -1998,7 +2000,7 @@ export class Card {
 		}
 
 		if (this.hasStats()) {
-			const titan = this.getKeyword("Titan") as number[] | false;
+			const titan = this.getKeyword(Keyword.Titan) as number[] | false;
 
 			sb += titan
 				? game.functions.color.if(
@@ -2011,7 +2013,7 @@ export class Card {
 						"bright:green",
 						` [${this.attack} / ${this.health}]`,
 					);
-		} else if (this.type === "Location") {
+		} else if (this.type === Type.Location) {
 			const { durability } = this;
 			const maxDurability = this.backups.init.durability;
 			const maxCooldown = this.backups.init.cooldown ?? 0;
@@ -2047,27 +2049,27 @@ export class Card {
 		const { type } = this;
 
 		switch (type) {
-			case "Minion": {
+			case Type.Minion: {
 				tribe = ` (<gray>${this.tribe ?? "None"}</gray>)`;
 				break;
 			}
 
-			case "Spell": {
+			case Type.Spell: {
 				spellSchool = this.spellSchool
 					? ` (<cyan>${this.spellSchool}</cyan>)`
 					: " (None)";
 				break;
 			}
 
-			case "Location": {
+			case Type.Location: {
 				locCooldown = ` (<cyan>${this.storage.init.cooldown ?? 0}</cyan>)`;
 				break;
 			}
 
-			case "Hero":
-			case "Weapon":
-			case "Heropower":
-			case "Undefined": {
+			case Type.Hero:
+			case Type.Weapon:
+			case Type.HeroPower:
+			case Type.Undefined: {
 				break;
 			}
 
