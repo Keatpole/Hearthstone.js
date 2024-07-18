@@ -7,16 +7,19 @@ import {
 	functions,
 	interact,
 } from "@Game/internal.js";
-import type {
-	Blueprint,
-	CardAbility,
-	CardKeyword,
-	EventKey,
-	GameAttackReturn,
-	GameConfig,
-	GamePlayCardReturn,
-	Target,
-	UnknownEventValue,
+import {
+	Ability,
+	type Blueprint,
+	CostType,
+	Event,
+	type GameAttackReturn,
+	type GameConfig,
+	type GamePlayCardReturn,
+	Keyword,
+	type Target,
+	Tribe,
+	Type,
+	type UnknownEventValue,
 } from "@Game/types.js";
 import date from "date-and-time";
 /**
@@ -60,10 +63,12 @@ const attack = {
 		}
 
 		// Check if there is a minion with taunt
-		const taunts = game.opponent.board.filter((m) => m.hasKeyword("Taunt"));
+		const taunts = game.opponent.board.filter((m) =>
+			m.hasKeyword(Keyword.Taunt),
+		);
 		if (taunts.length > 0 && !force) {
 			// If the target is a card and has taunt, you are allowed to attack it
-			if (target instanceof Card && target.hasKeyword("Taunt")) {
+			if (target instanceof Card && target.hasKeyword(Keyword.Taunt)) {
 				// Allow the attack since the target also has taunt
 			} else {
 				return "taunt";
@@ -96,15 +101,15 @@ const attack = {
 			}
 
 			if (target instanceof Card) {
-				if (target.hasKeyword("Stealth")) {
+				if (target.hasKeyword(Keyword.Stealth)) {
 					return "stealth";
 				}
 
-				if (target.hasKeyword("Immune")) {
+				if (target.hasKeyword(Keyword.Immune)) {
 					return "immune";
 				}
 
-				if (target.hasKeyword("Dormant")) {
+				if (target.hasKeyword(Keyword.Dormant)) {
 					return "dormant";
 				}
 			}
@@ -125,8 +130,8 @@ const attack = {
 			return true;
 		}
 
-		if (target.hasKeyword("Divine Shield")) {
-			target.remKeyword("Divine Shield");
+		if (target.hasKeyword(Keyword.DivineShield)) {
+			target.remKeyword(Keyword.DivineShield);
 			return "divineshield";
 		}
 
@@ -194,7 +199,7 @@ const attack = {
 		// The attacker can't attack anymore this turn.
 		attack._removeDurabilityFromWeapon(attacker, target);
 
-		game.event.broadcast("Attack", [attacker, target], attacker);
+		game.event.broadcast(Event.Attack, [attacker, target], attacker);
 		return true;
 	},
 
@@ -206,15 +211,15 @@ const attack = {
 	): GameAttackReturn {
 		// If the target has stealth, the attacker can't attack it
 		if (!force) {
-			if (target.hasKeyword("Stealth")) {
+			if (target.hasKeyword(Keyword.Stealth)) {
 				return "stealth";
 			}
 
-			if (target.hasKeyword("Immune")) {
+			if (target.hasKeyword(Keyword.Immune)) {
 				return "immune";
 			}
 
-			if (target.hasKeyword("Dormant")) {
+			if (target.hasKeyword(Keyword.Dormant)) {
 				return "dormant";
 			}
 
@@ -231,7 +236,7 @@ const attack = {
 		attack._doFrenzy(target);
 		attack._removeDurabilityFromWeapon(attacker, target);
 
-		game.event.broadcast("Attack", [attacker, target], attacker);
+		game.event.broadcast(Event.Attack, [attacker, target], attacker);
 		return true;
 	},
 
@@ -242,15 +247,15 @@ const attack = {
 		force: boolean,
 	): GameAttackReturn {
 		if (!force) {
-			if (attacker.hasKeyword("Dormant")) {
+			if (attacker.hasKeyword(Keyword.Dormant)) {
 				return "dormant";
 			}
 
-			if (attacker.hasKeyword("Titan")) {
+			if (attacker.hasKeyword(Keyword.Titan)) {
 				return "titan";
 			}
 
-			if (attacker.hasKeyword("Frozen")) {
+			if (attacker.hasKeyword(Keyword.Frozen)) {
 				return "frozen";
 			}
 
@@ -270,15 +275,15 @@ const attack = {
 			 * Do Forgetful last
 			 * It is in a while loop so that it can be returned early
 			 */
-			while (attacker.hasKeyword("Forgetful")) {
+			while (attacker.hasKeyword(Keyword.Forgetful)) {
 				// Get the forgetful state
-				let forgetfulState = attacker.getKeyword("Forgetful") as
+				let forgetfulState = attacker.getKeyword(Keyword.Forgetful) as
 					| undefined
 					| number;
 
 				// If the forgetful state is undefined, set it to 1
 				if (forgetfulState === undefined) {
-					attacker.setKeyword("Forgetful", 1);
+					attacker.setKeyword(Keyword.Forgetful, 1);
 					forgetfulState = 1;
 				}
 
@@ -298,7 +303,7 @@ const attack = {
 				const ownerIsPlayer2 = attacker.owner === game.player2;
 
 				// Set the forgetful state to 2, so we don't do the coin flip again when attacking the random target
-				attacker.setKeyword("Forgetful", 2);
+				attacker.setKeyword(Keyword.Forgetful, 2);
 
 				// Keep on trying to attack random targets until it works, or we've tried the max times
 				for (
@@ -331,7 +336,7 @@ const attack = {
 				}
 
 				// After the loop, set the forgetful state back to 1 so we can do the coin flip again next time
-				attacker.setKeyword("Forgetful", 1);
+				attacker.setKeyword(Keyword.Forgetful, 1);
 
 				// If the attack was successful, return since it already attacked a random target and this attack is useless now.
 				if (result === true) {
@@ -377,7 +382,7 @@ const attack = {
 		}
 
 		// If attacker has stealth, remove it
-		attacker.remKeyword("Stealth");
+		attacker.remKeyword(Keyword.Stealth);
 
 		// If attacker has lifesteal, heal it's owner
 		attack._doLifesteal(attacker);
@@ -388,7 +393,7 @@ const attack = {
 		// Remember this attack
 		attacker.decAttack();
 
-		game.event.broadcast("Attack", [attacker, target], attacker.owner);
+		game.event.broadcast(Event.Attack, [attacker, target], attacker.owner);
 		return true;
 	},
 
@@ -399,15 +404,15 @@ const attack = {
 		force: boolean,
 	): GameAttackReturn {
 		if (!force) {
-			if (target.hasKeyword("Stealth")) {
+			if (target.hasKeyword(Keyword.Stealth)) {
 				return "stealth";
 			}
 
-			if (target.hasKeyword("Immune")) {
+			if (target.hasKeyword(Keyword.Immune)) {
 				return "immune";
 			}
 
-			if (target.hasKeyword("Dormant")) {
+			if (target.hasKeyword(Keyword.Dormant)) {
 				return "dormant";
 			}
 
@@ -419,7 +424,7 @@ const attack = {
 		attack._attackerIsCardAndTargetIsCardDoAttacker(attacker, target);
 		attack._attackerIsCardAndTargetIsCardDoTarget(attacker, target);
 
-		game.event.broadcast("Attack", [attacker, target], attacker.owner);
+		game.event.broadcast(Event.Attack, [attacker, target], attacker.owner);
 		return true;
 	},
 	_attackerIsCardAndTargetIsCardDoAttacker(
@@ -430,7 +435,7 @@ const attack = {
 		attack._cleave(attacker, target);
 
 		attacker.decAttack();
-		attacker.remKeyword("Stealth");
+		attacker.remKeyword(Keyword.Stealth);
 
 		const shouldDamage = attack._cardAttackHelper(attacker);
 		if (!shouldDamage) {
@@ -464,11 +469,11 @@ const attack = {
 		// Remove frenzy
 		attack._doFrenzy(target);
 		if (target.health && target.health < 0) {
-			attacker.activate("overkill");
+			attacker.activate(Ability.Overkill);
 		}
 
 		if (target.health && target.health === 0) {
-			attacker.activate("honorablekill");
+			attacker.activate(Ability.HonorableKill);
 		}
 
 		return true;
@@ -476,12 +481,12 @@ const attack = {
 
 	// Helper functions
 	_cardAttackHelper(card: Card): boolean {
-		if (card.hasKeyword("Immune")) {
+		if (card.hasKeyword(Keyword.Immune)) {
 			return false;
 		}
 
-		if (card.hasKeyword("Divine Shield")) {
-			card.remKeyword("Divine Shield");
+		if (card.hasKeyword(Keyword.DivineShield)) {
+			card.remKeyword(Keyword.DivineShield);
 			return false;
 		}
 
@@ -489,7 +494,7 @@ const attack = {
 	},
 
 	_cleave(attacker: Card, target: Card): void {
-		if (!attacker.hasKeyword("Cleave")) {
+		if (!attacker.hasKeyword(Keyword.Cleave)) {
 			return;
 		}
 
@@ -516,13 +521,13 @@ const attack = {
 		}
 
 		// The card has more than 0 health
-		if (card.activate("frenzy") !== -1) {
+		if (card.activate(Ability.Frenzy) !== -1) {
 			card.abilities.frenzy = undefined;
 		}
 	},
 
 	_doPoison(poisonCard: Card, other: Card): void {
-		if (!poisonCard.hasKeyword("Poisonous")) {
+		if (!poisonCard.hasKeyword(Keyword.Poisonous)) {
 			return;
 		}
 
@@ -531,7 +536,7 @@ const attack = {
 	},
 
 	_doLifesteal(attacker: Card): void {
-		if (!attacker.hasKeyword("Lifesteal")) {
+		if (!attacker.hasKeyword(Keyword.Lifesteal)) {
 			return;
 		}
 
@@ -555,7 +560,7 @@ const attack = {
 		let dmg = game.lodash.parseInt(match[1]);
 		dmg += game.player.spellDamage;
 
-		game.event.broadcast("SpellDealsDamage", [target, dmg], game.player);
+		game.event.broadcast(Event.SpellDealsDamage, [target, dmg], game.player);
 		return dmg;
 	},
 
@@ -571,12 +576,12 @@ const attack = {
 			weapon.decAttack();
 
 			// Only remove 1 durability if the weapon is not unbreakable
-			if (!weapon.hasKeyword("Unbreakable")) {
+			if (!weapon.hasKeyword(Keyword.Unbreakable)) {
 				weapon.remStats(0, 1);
 			}
 
 			// If the weapon is alive and it has unlimited attacks, the player can attack again this turn
-			if (!weapon.isAlive() || !weapon.hasKeyword("Unlimited Attacks")) {
+			if (!weapon.isAlive() || !weapon.hasKeyword(Keyword.UnlimitedAttacks)) {
 				attacker.canAttack = false;
 			}
 
@@ -624,7 +629,9 @@ const playCard = {
 
 		// Charge you for the card
 		player[card.costType] -= card.cost;
-		game.functions.event.withSuppressed("DiscardCard", () => card.discard());
+		game.functions.event.withSuppressed(Event.DiscardCard, () =>
+			card.discard(),
+		);
 
 		// Counter
 		if (playCard._countered(card, player)) {
@@ -632,11 +639,11 @@ const playCard = {
 		}
 
 		// Broadcast `PlayCardUnsafe` event without adding it to the history
-		game.event.broadcast("PlayCardUnsafe", card, player, false);
+		game.event.broadcast(Event.PlayCardUnsafe, card, player, false);
 
 		// Finale
 		if (player[card.costType] === 0) {
-			card.activate("finale");
+			card.activate(Ability.Finale);
 		}
 
 		// Store the result of the type-specific code
@@ -660,7 +667,7 @@ const playCard = {
 		}
 
 		// Add the `PlayCardUnsafe` event to the history, now that it's safe to do so
-		game.event.addHistory("PlayCardUnsafe", card, player);
+		game.event.addHistory(Event.PlayCardUnsafe, card, player);
 
 		// Echo
 		playCard._echo(card, player);
@@ -672,7 +679,7 @@ const playCard = {
 		playCard._corrupt(card, player);
 
 		// Broadcast `PlayCard` event
-		game.event.broadcast("PlayCard", card, player);
+		game.event.broadcast(Event.PlayCard, card, player);
 		return result;
 	},
 
@@ -684,23 +691,26 @@ const playCard = {
 				return "magnetize";
 			}
 
-			if (!card.hasKeyword("Dormant") && card.activate("battlecry") === -1) {
+			if (
+				!card.hasKeyword(Keyword.Dormant) &&
+				card.activate(Ability.Battlecry) === -1
+			) {
 				return "refund";
 			}
 
-			return game.functions.event.withSuppressed("SummonCard", () =>
+			return game.functions.event.withSuppressed(Event.SummonCard, () =>
 				player.summon(card),
 			);
 		},
 
 		Spell(card: Card, player: Player): GamePlayCardReturn {
-			if (card.activate("cast") === -1) {
+			if (card.activate(Ability.Cast) === -1) {
 				return "refund";
 			}
 
 			// Twinspell functionality
-			if (card.hasKeyword("Twinspell")) {
-				card.remKeyword("Twinspell");
+			if (card.hasKeyword(Keyword.Twinspell)) {
+				card.remKeyword(Keyword.Twinspell);
 				card.text = card.text.split("Twinspell")[0].trim();
 
 				player.addToHand(card);
@@ -708,7 +718,7 @@ const playCard = {
 
 			// Spellburst functionality
 			for (const card of player.board) {
-				card.activate("spellburst");
+				card.activate(Ability.Spellburst);
 				card.abilities.spellburst = undefined;
 			}
 
@@ -716,7 +726,7 @@ const playCard = {
 		},
 
 		Weapon(card: Card, player: Player): GamePlayCardReturn {
-			if (card.activate("battlecry") === -1) {
+			if (card.activate(Ability.Battlecry) === -1) {
 				return "refund";
 			}
 
@@ -725,7 +735,7 @@ const playCard = {
 		},
 
 		Hero(card: Card, player: Player): GamePlayCardReturn {
-			if (card.activate("battlecry") === -1) {
+			if (card.activate(Ability.Battlecry) === -1) {
 				return "refund";
 			}
 
@@ -735,10 +745,10 @@ const playCard = {
 
 		Location(card: Card, player: Player): GamePlayCardReturn {
 			card.setStats(0, card.health);
-			card.addKeyword("Immune");
+			card.addKeyword(Keyword.Immune);
 			card.cooldown = 0;
 
-			return game.functions.event.withSuppressed("SummonCard", () =>
+			return game.functions.event.withSuppressed(Event.SummonCard, () =>
 				player.summon(card),
 			);
 		},
@@ -753,7 +763,7 @@ const playCard = {
 	},
 
 	_trade(card: Card, player: Player): GamePlayCardReturn {
-		if (!card.hasKeyword("Tradeable")) {
+		if (!card.hasKeyword(Keyword.Tradeable)) {
 			return "invalid";
 		}
 
@@ -787,16 +797,18 @@ const playCard = {
 
 		player.mana -= 1;
 
-		game.functions.event.withSuppressed("DiscardCard", () => card.discard());
+		game.functions.event.withSuppressed(Event.DiscardCard, () =>
+			card.discard(),
+		);
 		player.drawCards(1);
 		player.shuffleIntoDeck(card);
 
-		game.event.broadcast("TradeCard", card, player);
+		game.event.broadcast(Event.TradeCard, card, player);
 		return true;
 	},
 
 	_forge(card: Card, player: Player): GamePlayCardReturn {
-		const forgeId = card.getKeyword("Forge") as number | undefined;
+		const forgeId = card.getKeyword(Keyword.Forge) as number | undefined;
 
 		if (!forgeId) {
 			return "invalid";
@@ -824,11 +836,13 @@ const playCard = {
 
 		player.mana -= 2;
 
-		game.functions.event.withSuppressed("DiscardCard", () => card.discard());
+		game.functions.event.withSuppressed(Event.DiscardCard, () =>
+			card.discard(),
+		);
 		const forged = new Card(forgeId, player);
 		player.addToHand(forged);
 
-		game.event.broadcast("ForgeCard", card, player);
+		game.event.broadcast(Event.ForgeCard, card, player);
 		return true;
 	},
 
@@ -842,11 +856,11 @@ const playCard = {
 		}
 
 		// Refund
-		game.functions.event.withSuppressed("AddCardToHand", () =>
+		game.functions.event.withSuppressed(Event.AddCardToHand, () =>
 			player.addToHand(card),
 		);
 
-		if (card.costType === "mana") {
+		if (card.costType === CostType.Mana) {
 			player.refreshMana(card.cost);
 		} else {
 			player[card.costType] += card.cost;
@@ -856,7 +870,7 @@ const playCard = {
 	},
 
 	_condition(card: Card, player: Player): boolean {
-		const condition = card.activate("condition");
+		const condition = card.activate(Ability.Condition);
 		if (!Array.isArray(condition)) {
 			return true;
 		}
@@ -894,13 +908,13 @@ const playCard = {
 	},
 
 	_echo(card: Card, player: Player): boolean {
-		if (!card.hasKeyword("Echo")) {
+		if (!card.hasKeyword(Keyword.Echo)) {
 			return false;
 		}
 
 		// Create an exact copy of the card played
 		const echo = card.perfectCopy();
-		echo.addKeyword("Echo");
+		echo.addKeyword(Keyword.Echo);
 
 		player.addToHand(echo);
 		return true;
@@ -923,7 +937,7 @@ const playCard = {
 
 		// If the previous card played was played on the same turn as this one, activate combo
 		if (latestCard.turn === game.turn) {
-			card.activate("combo");
+			card.activate(Ability.Combo);
 		}
 
 		return true;
@@ -931,7 +945,9 @@ const playCard = {
 
 	_corrupt(card: Card, player: Player): boolean {
 		for (const toCorrupt of player.hand) {
-			const corruptId = toCorrupt.getKeyword("Corrupt") as number | undefined;
+			const corruptId = toCorrupt.getKeyword(Keyword.Corrupt) as
+				| number
+				| undefined;
 			if (!corruptId || card.cost <= toCorrupt.cost) {
 				continue;
 			}
@@ -939,8 +955,10 @@ const playCard = {
 			// Corrupt that card
 			const corrupted = new Card(corruptId, player);
 
-			game.functions.event.withSuppressed("DiscardCard", () => card.discard());
-			game.functions.event.withSuppressed("AddCardToHand", () =>
+			game.functions.event.withSuppressed(Event.DiscardCard, () =>
+				card.discard(),
+			);
+			game.functions.event.withSuppressed(Event.AddCardToHand, () =>
 				player.addToHand(corrupted),
 			);
 		}
@@ -951,12 +969,13 @@ const playCard = {
 	_magnetize(card: Card, player: Player): boolean {
 		const board = player.board;
 
-		if (!card.hasKeyword("Magnetic") || board.length <= 0) {
+		if (!card.hasKeyword(Keyword.Magnetic) || board.length <= 0) {
 			return false;
 		}
 
 		// Find the mechs on the board
-		const mechs = board.filter((m) => m.tribe?.includes("Mech"));
+		// TODO: Add multi-tribe support.
+		const mechs = board.filter((m) => m.tribe === Tribe.Mech);
 		if (mechs.length <= 0) {
 			return false;
 		}
@@ -971,7 +990,7 @@ const playCard = {
 			return false;
 		}
 
-		if (!mech.tribe?.includes("Mech")) {
+		if (mech.tribe !== Tribe.Mech) {
 			console.log("That minion is not a Mech.");
 			return playCard._magnetize(card, player);
 		}
@@ -979,7 +998,7 @@ const playCard = {
 		mech.addStats(card.attack, card.health);
 
 		for (const entry of Object.entries(card.keywords)) {
-			mech.addKeyword(entry[0] as CardKeyword, entry[1]);
+			mech.addKeyword(entry[0] as Keyword, entry[1]);
 		}
 
 		if (mech.maxHealth && card.maxHealth) {
@@ -991,7 +1010,7 @@ const playCard = {
 			const [key, value] = entry;
 
 			for (const ability of value) {
-				mech.addAbility(key as CardAbility, ability);
+				mech.addAbility(key as Ability, ability);
 			}
 		}
 
@@ -1034,20 +1053,20 @@ const cards = {
 
 		player.spellDamage = 0;
 
-		if (card.hasKeyword("Charge") || card.hasKeyword("Titan")) {
+		if (card.hasKeyword(Keyword.Charge) || card.hasKeyword(Keyword.Titan)) {
 			card.ready();
 			card.resetAttackTimes();
 		}
 
-		if (card.hasKeyword("Rush")) {
+		if (card.hasKeyword(Keyword.Rush)) {
 			card.ready();
 			card.resetAttackTimes();
 			card.canAttackHero = false;
 		}
 
-		const dormant = card.getKeyword("Dormant") as number | undefined;
+		const dormant = card.getKeyword(Keyword.Dormant) as number | undefined;
 
-		const colossalMinionIds = card.getKeyword("Colossal") as
+		const colossalMinionIds = card.getKeyword(Keyword.Colossal) as
 			| number[]
 			| undefined;
 		if (colossalMinionIds && colossal) {
@@ -1057,7 +1076,7 @@ const cards = {
 			 * the null0 / 0 gets replaced with the main minion
 			 */
 
-			const unsuppress = game.functions.event.suppress("SummonCard");
+			const unsuppress = game.functions.event.suppress(Event.SummonCard);
 
 			for (const cardId of colossalMinionIds) {
 				if (cardId <= 0) {
@@ -1070,7 +1089,7 @@ const cards = {
 
 				// If this card has dormant, add it to the summoned minions as well.
 				if (dormant) {
-					cardToSummon.addKeyword("Dormant", dormant);
+					cardToSummon.addKeyword(Keyword.Dormant, dormant);
 				}
 
 				player.summon(cardToSummon);
@@ -1093,8 +1112,8 @@ const cards = {
 			 * This is so that the game can know when to remove the dormant by checking which turn it is.
 			 * We should really document this somewhere, since it can easily be overriden by a card after it has been summoned, which would cause unexpected behavior.
 			 */
-			card.setKeyword("Dormant", dormant + game.turn);
-			card.addKeyword("Immune");
+			card.setKeyword(Keyword.Dormant, dormant + game.turn);
+			card.addKeyword(Keyword.Immune);
 
 			// TODO: Why are we readying the dormant minion?
 			card.ready();
@@ -1110,7 +1129,7 @@ const cards = {
 			}
 		}
 
-		game.event.broadcast("SummonCard", card, player);
+		game.event.broadcast(Event.SummonCard, card, player);
 		return true;
 	},
 };
@@ -1320,7 +1339,7 @@ export class Game {
 	 * @returns Return values of all the executed functions
 	 */
 	triggerEventListeners(
-		key: EventKey,
+		key: Event,
 		value: UnknownEventValue,
 		player: Player,
 	): void {
@@ -1342,9 +1361,10 @@ export class Game {
 			const player = Player.fromID(i);
 
 			// Suppress "AddCardToHand" and "DrawCard" events in the loop since the events need to be unsuppressed by the time any `card.activate` is called
-			const unsuppressAddCardToHand =
-				this.functions.event.suppress("AddCardToHand");
-			const unsuppressDrawCard = this.functions.event.suppress("DrawCard");
+			const unsuppressAddCardToHand = this.functions.event.suppress(
+				Event.AddCardToHand,
+			);
+			const unsuppressDrawCard = this.functions.event.suppress(Event.DrawCard);
 
 			// Set the player's hero to the starting hero for the class
 			const success = player.setToStartingHero();
@@ -1378,11 +1398,11 @@ export class Game {
 			unsuppressDrawCard();
 
 			for (const card of player.deck) {
-				card.activate("startofgame");
+				card.activate(Ability.StartOfGame);
 			}
 
 			for (const card of player.hand) {
-				card.activate("startofgame");
+				card.activate(Ability.StartOfGame);
 			}
 		}
 
@@ -1395,7 +1415,7 @@ export class Game {
 
 		// Give the coin to the second player
 		const coin = new Card(this.cardIds.theCoin2, this.player2);
-		this.functions.event.withSuppressed("AddCardToHand", () =>
+		this.functions.event.withSuppressed(Event.AddCardToHand, () =>
 			this.player2.addToHand(coin),
 		);
 
@@ -1448,15 +1468,15 @@ export class Game {
 		}
 
 		// Remove echo cards
-		player.hand = player.hand.filter((c) => !c.hasKeyword("Echo"));
+		player.hand = player.hand.filter((c) => !c.hasKeyword(Keyword.Echo));
 		player.canAttack = true;
 
 		// Trigger unspent mana
 		if (player.mana > 0) {
-			this.event.broadcast("UnspentMana", player.mana, player);
+			this.event.broadcast(Event.UnspentMana, player.mana, player);
 		}
 
-		this.event.broadcast("EndTurn", this.turn, player);
+		this.event.broadcast(Event.EndTurn, this.turn, player);
 
 		// Everything after this comment happens when the opponent's turn starts
 		this.turn++;
@@ -1485,7 +1505,7 @@ export class Game {
 		// Minion start of turn
 		for (const card of opponent.board) {
 			// Dormant
-			const dormant = card.getKeyword("Dormant") as number | undefined;
+			const dormant = card.getKeyword(Keyword.Dormant) as number | undefined;
 
 			if (dormant) {
 				// If the current turn is less than the dormant value, do nothing
@@ -1494,7 +1514,7 @@ export class Game {
 				}
 
 				// Remove dormant
-				card.remKeyword("Dormant");
+				card.remKeyword(Keyword.Dormant);
 				card.sleepy = true;
 
 				/*
@@ -1505,14 +1525,14 @@ export class Game {
 
 				// HACK: If the battlecry use a function that depends on `game.player`
 				this.player = opponent;
-				card.activate("battlecry");
+				card.activate(Ability.Battlecry);
 				this.player = player;
 
 				continue;
 			}
 
 			card.canAttackHero = true;
-			card.remKeyword("Frozen");
+			card.remKeyword(Keyword.Frozen);
 
 			card.ready();
 			card.resetAttackTimes();
@@ -1524,11 +1544,11 @@ export class Game {
 				this.turn > card.stealthDuration
 			) {
 				card.stealthDuration = 0;
-				card.remKeyword("Stealth");
+				card.remKeyword(Keyword.Stealth);
 			}
 
 			// Location cooldown
-			if (card.type === "Location" && card.cooldown && card.cooldown > 0) {
+			if (card.type === Type.Location && card.cooldown && card.cooldown > 0) {
 				card.cooldown--;
 			}
 		}
@@ -1541,7 +1561,7 @@ export class Game {
 		this.player = opponent;
 		this.opponent = player;
 
-		this.event.broadcast("StartTurn", this.turn, opponent);
+		this.event.broadcast(Event.StartTurn, this.turn, opponent);
 		return true;
 	}
 
@@ -1571,7 +1591,7 @@ export class Game {
 					continue;
 				}
 
-				card.activate("deathrattle");
+				card.activate(Ability.Deathrattle);
 			}
 
 			for (const card of player.board) {
@@ -1582,7 +1602,7 @@ export class Game {
 				}
 
 				// Calmly tell the minion that it is going to die
-				const removeReturn = card.activate("remove", "KillCard");
+				const removeReturn = card.activate(Ability.Remove, "KillCard");
 
 				// If the "remove" ability returns false, the card is not removed from the board
 				if (Array.isArray(removeReturn) && removeReturn[0] === false) {
@@ -1596,15 +1616,15 @@ export class Game {
 				player.corpses++;
 				player.graveyard.push(card);
 
-				this.event.broadcast("KillCard", card, this.player);
+				this.event.broadcast(Event.KillCard, card, this.player);
 
-				if (!card.hasKeyword("Reborn")) {
+				if (!card.hasKeyword(Keyword.Reborn)) {
 					continue;
 				}
 
 				// Reborn
 				const minion = card.imperfectCopy();
-				minion.remKeyword("Reborn");
+				minion.remKeyword(Keyword.Reborn);
 
 				// Reduce the minion's health to 1, keep the minion's attack the same
 				minion.setStats(minion.attack, 1);
@@ -1614,7 +1634,7 @@ export class Game {
 				 * This isn't great performance wise, but there's not much we can do about it.
 				 * Although the performance hit is only a few milliseconds in total every time (This function does get called often), so there's bigger performance gains to be had elsewhere.
 				 */
-				this.functions.event.withSuppressed("SummonCard", () =>
+				this.functions.event.withSuppressed(Event.SummonCard, () =>
 					this.summon(minion, player),
 				);
 
@@ -1628,7 +1648,7 @@ export class Game {
 				 * So it looks like this:
 				 * minion.activate(key, reason, minion);
 				 */
-				minion.activate("passive", "reborn", card, this.player);
+				minion.activate(Ability.Passive, "reborn", card, this.player);
 
 				spared.push(minion);
 			}

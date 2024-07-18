@@ -4,14 +4,14 @@
  */
 
 import { createGame } from "@Game/internal.js";
-import type {
-	Blueprint,
-	CardClass,
-	CardRarity,
-	CardType,
-	MinionTribe,
-	SpellSchool,
-	VanillaCard,
+import {
+	type Blueprint,
+	type Class,
+	type Rarity,
+	type SpellSchool,
+	type Tribe,
+	Type,
+	type VanillaCard,
 } from "@Game/types.js";
 import * as lib from "./lib.js";
 
@@ -29,15 +29,13 @@ export function create(
 	overrideType?: lib.CcType,
 ): void {
 	// Harvest info
-	let cardClass = game.lodash.capitalize(
-		card.cardClass ?? "Neutral",
-	) as CardClass;
+	let cardClass = game.lodash.capitalize(card.cardClass ?? "Neutral") as Class;
 	const collectible = card.collectible ?? false;
 	const cost = card.cost ?? 0;
 	const { name } = card;
-	let rarity: CardRarity = "Free";
+	let rarity: Rarity = "Free";
 	if (card.rarity) {
-		rarity = game.lodash.capitalize(card.rarity) as CardRarity;
+		rarity = game.lodash.capitalize(card.rarity) as Rarity;
 	}
 
 	let text = card.text ?? "";
@@ -46,14 +44,14 @@ export function create(
 		typeString = "Heropower";
 	}
 
-	const type = typeString as CardType;
+	const type = typeString as Type;
 
 	// Minion info
 	const attack = card.attack ?? -1;
 	const health = card.health ?? -1;
-	let races: MinionTribe[] = [];
+	let races: Tribe[] = [];
 	if (card.races) {
-		races = card.races.map((r) => game.lodash.capitalize(r) as MinionTribe);
+		races = card.races.map((r) => game.lodash.capitalize(r) as Tribe);
 	}
 
 	// Spell info
@@ -69,7 +67,7 @@ export function create(
 	text = text.replaceAll("\n", " ");
 	text = text.replaceAll("[x]", "");
 
-	const classes = game.functions.card.getClasses() as CardClass[];
+	const classes = game.functions.card.getClasses() as Class[];
 	classes.push("Neutral");
 
 	while (!classes.includes(cardClass)) {
@@ -77,10 +75,10 @@ export function create(
 			game.input(
 				"<red>Was not able to find the class of this card.\nWhat is the class of this card? </red>",
 			),
-		) as CardClass;
+		) as Class;
 	}
 
-	if (type === "Hero") {
+	if (type === Type.Hero) {
 		// Add the hero power
 		console.log("<green>Adding the hero power</green>");
 
@@ -106,7 +104,7 @@ export function create(
 	};
 
 	switch (type) {
-		case "Minion": {
+		case Type.Minion: {
 			blueprint = Object.assign(blueprint, {
 				attack,
 				health,
@@ -117,7 +115,7 @@ export function create(
 			break;
 		}
 
-		case "Spell": {
+		case Type.Spell: {
 			blueprint = Object.assign(blueprint, {
 				spellSchool,
 			});
@@ -125,7 +123,7 @@ export function create(
 			break;
 		}
 
-		case "Weapon": {
+		case Type.Weapon: {
 			blueprint = Object.assign(blueprint, {
 				attack,
 				health: durability,
@@ -134,7 +132,7 @@ export function create(
 			break;
 		}
 
-		case "Hero": {
+		case Type.Hero: {
 			blueprint = Object.assign(blueprint, {
 				armor: card.armor,
 				heropowerId: lib.getLatestId(),
@@ -143,7 +141,7 @@ export function create(
 			break;
 		}
 
-		case "Location": {
+		case Type.Location: {
 			blueprint = Object.assign(blueprint, {
 				durability: health,
 				cooldown: 2,
@@ -152,8 +150,8 @@ export function create(
 			break;
 		}
 
-		case "Heropower":
-		case "Undefined": {
+		case Type.HeroPower:
+		case Type.Undefined: {
 			break;
 		}
 

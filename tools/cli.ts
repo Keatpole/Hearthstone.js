@@ -1,5 +1,5 @@
 import * as src from "@Game/index.js"; // Source Code
-import type { Blueprint } from "@Game/types.js";
+import { type Blueprint, Event } from "@Game/types.js";
 import * as clc from "../tools/cardcreator/class.js"; // Class Creator
 import * as ccc from "../tools/cardcreator/custom.js"; // Custom Card Creator
 import * as cclib from "../tools/cardcreator/lib.js"; // Class Creator
@@ -250,7 +250,7 @@ export function main(
 					game.pause();
 				}
 
-				game.event.broadcast("Eval", code, game.player);
+				game.event.broadcast(Event.Eval, code, game.player);
 				break;
 			}
 

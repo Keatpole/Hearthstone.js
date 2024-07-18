@@ -1,5 +1,5 @@
 import type {
-	EventKey,
+	Event,
 	EventListenerCallback,
 	TickHookCallback,
 } from "@Game/types.js";
@@ -15,7 +15,7 @@ export const eventFunctions = {
 	 * @returns If you call this function, it will destroy the event listener.
 	 */
 	addListener(
-		key: EventKey | "",
+		key: Event | "",
 		callback: EventListenerCallback,
 		lifespan = 1,
 	): () => boolean {
@@ -108,7 +108,7 @@ export const eventFunctions = {
 	 *
 	 * @returns A function that undoes the suppression.
 	 */
-	suppress(key: EventKey): () => boolean {
+	suppress(key: Event): () => boolean {
 		game.event.suppressed.push(key);
 
 		/**
@@ -127,7 +127,7 @@ export const eventFunctions = {
 	 *
 	 * @returns A function that undoes this.
 	 */
-	ignoreSuppression(key: EventKey): () => boolean {
+	ignoreSuppression(key: Event): () => boolean {
 		game.event.forced.push(key);
 
 		/**
@@ -146,7 +146,7 @@ export const eventFunctions = {
 	 *
 	 * @returns The return value of the callback.
 	 */
-	withSuppressed<T>(key: EventKey | EventKey[], callback: () => T): T {
+	withSuppressed<T>(key: Event | Event[], callback: () => T): T {
 		const unsuppressed: Array<() => boolean> = [];
 
 		if (Array.isArray(key)) {

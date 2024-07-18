@@ -1,11 +1,10 @@
-import { Card, CardError, type Player } from "@Game/internal.js";
-import type {
-	Blueprint,
-	CardClass,
-	CardClassNoNeutral,
-	CardType,
-	MinionTribe,
-	VanillaCard,
+import { Card } from "@Game/internal.js";
+import {
+	type Blueprint,
+	Class,
+	Tribe,
+	Type,
+	type VanillaCard,
 } from "@Game/types.js";
 
 const vanilla = {
@@ -159,8 +158,8 @@ export const cardFunctions = {
 	/**
 	 * Returns if `classes` includes `cardClass` (also Neutral logic).
 	 */
-	validateClasses(classes: CardClass[], cardClass: CardClass): boolean {
-		if (classes.includes("Neutral")) {
+	validateClasses(classes: Class[], cardClass: Class): boolean {
+		if (classes.includes(Class.Neutral)) {
 			return true;
 		}
 
@@ -184,9 +183,9 @@ export const cardFunctions = {
 	 * const result = matchTribe(card.tribe, "Beast");
 	 * assert.equal(result, true);
 	 */
-	matchTribe(cardTribe: MinionTribe, tribe: MinionTribe): boolean {
+	matchTribe(cardTribe: Tribe, tribe: Tribe): boolean {
 		// If the card's tribe is "All".
-		if (cardTribe === "All") {
+		if (cardTribe === Tribe.All) {
 			return true;
 		}
 
@@ -225,10 +224,10 @@ export const cardFunctions = {
 	/**
 	 * Returns all classes in the game
 	 */
-	getClasses(): CardClassNoNeutral[] {
+	getClasses(): Class[] {
 		return game.cardCollections.classes.map(
 			(heroId) => new Card(heroId, game.player, true).classes[0],
-		) as CardClassNoNeutral[];
+		) as Class[];
 	},
 
 	/**
@@ -252,22 +251,22 @@ export const cardFunctions = {
 	 */
 	validateBlueprint(blueprint: Blueprint): string | boolean {
 		// These are the required fields for all card types.
-		const requiredFieldsTable: { [x in CardType]: string[] } = {
-			Minion: ["attack", "health", "tribe"],
-			Spell: ["spellSchool"],
-			Weapon: ["attack", "health"],
-			Hero: ["armor", "heropowerId"],
-			Location: ["durability", "cooldown"],
-			Heropower: ["heropower"],
-			Undefined: [],
+		const requiredFieldsTable: { [x in Type]: string[] } = {
+			[Type.Minion]: ["attack", "health", "tribe"],
+			[Type.Spell]: ["spellSchool"],
+			[Type.Weapon]: ["attack", "health"],
+			[Type.Hero]: ["armor", "heropowerId"],
+			[Type.Location]: ["durability", "cooldown"],
+			[Type.HeroPower]: ["heropower"],
+			[Type.Undefined]: [],
 		};
 
 		// We trust the typescript compiler to do most of the work for us, but the type specific code is handled here.
 		const required = requiredFieldsTable[blueprint.type];
 
-		const unwanted = Object.keys(requiredFieldsTable);
+		const unwanted = Object.keys(requiredFieldsTable) as unknown as Type[];
 		game.functions.util.remove(unwanted, blueprint.type);
-		game.functions.util.remove(unwanted, "Undefined");
+		game.functions.util.remove(unwanted, Type.Undefined);
 
 		let result: string | boolean = true;
 		for (const field of required) {
@@ -279,7 +278,7 @@ export const cardFunctions = {
 		}
 
 		for (const key of unwanted) {
-			const fields = requiredFieldsTable[key as CardType];
+			const fields = requiredFieldsTable[key as Type];
 
 			for (const field of fields) {
 				// We already require that field. For example, both minions and weapons require stats

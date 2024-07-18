@@ -1,10 +1,12 @@
 import { Card, Player } from "@Game/internal.js";
-import type {
-	EventKey,
-	EventManagerEvents,
-	HistoryKey,
-	TickHookCallback,
-	UnknownEventValue,
+import {
+	Ability,
+	Event,
+	type EventManagerEvents,
+	type HistoryKey,
+	type TickHookCallback,
+	Type,
+	type UnknownEventValue,
 } from "@Game/types.js";
 
 type EventManagerType = {
@@ -13,25 +15,25 @@ type EventManagerType = {
 	tickHooks: TickHookCallback[];
 	history: Record<number, HistoryKey[]>;
 	events: EventManagerEvents;
-	suppressed: EventKey[];
-	forced: EventKey[];
+	suppressed: Event[];
+	forced: Event[];
 	stats: Record<string, [number, number]>;
 
-	tick(key: EventKey, value: UnknownEventValue, player: Player): boolean;
-	cardUpdate(key: EventKey, value: UnknownEventValue, player: Player): boolean;
+	tick(key: Event, value: UnknownEventValue, player: Player): boolean;
+	cardUpdate(key: Event, value: UnknownEventValue, player: Player): boolean;
 	questUpdate(
 		questsName: "secrets" | "sidequests" | "quests",
-		key: EventKey,
+		key: Event,
 		value: UnknownEventValue,
 		player: Player,
 	): boolean;
 	broadcast(
-		key: EventKey,
+		key: Event,
 		value: UnknownEventValue,
 		player: Player,
 		updateHistory?: boolean,
 	): boolean;
-	addHistory(key: EventKey, value: UnknownEventValue, player: Player): void;
+	addHistory(key: Event, value: UnknownEventValue, player: Player): void;
 	broadcastDummy(player: Player): boolean;
 	increment(player: Player, key: string, amount?: number): number;
 };
@@ -98,7 +100,7 @@ export const eventManager: EventManagerType = {
 		 */
 
 		// Infuse
-		if (key === "KillCard") {
+		if (key === Event.KillCard) {
 			for (const card of player.hand) {
 				card.tryInfuse();
 			}
@@ -113,18 +115,18 @@ export const eventManager: EventManagerType = {
 				// Just in case. Remove for small performance boost
 				card.applyEnchantments();
 
-				card.activate("handtick", key, value, player);
+				card.activate(Ability.HandTick, key, value, player);
 				if (card.cost < 0) {
 					card.cost = 0;
 				}
 			}
 
 			for (const card of player.board) {
-				if (card.type === "Minion" && !card.isAlive()) {
+				if (card.type === Type.Minion && !card.isAlive()) {
 					continue;
 				}
 
-				card.activate("tick", key, value, player);
+				card.activate(Ability.Tick, key, value, player);
 			}
 		}
 
@@ -152,7 +154,7 @@ export const eventManager: EventManagerType = {
 					continue;
 				}
 
-				card.activate("passive", key, value, player);
+				card.activate(Ability.Passive, key, value, player);
 			}
 		}
 
@@ -161,13 +163,13 @@ export const eventManager: EventManagerType = {
 
 			// Activate spells in the players hand
 			for (const card of player.hand) {
-				card.activate("handpassive", key, value, player);
+				card.activate(Ability.HandPassive, key, value, player);
 
-				if (card.type !== "Spell") {
+				if (card.type !== Type.Spell) {
 					continue;
 				}
 
-				card.activate("passive", key, value, player);
+				card.activate(Ability.Passive, key, value, player);
 			}
 
 			const { weapon } = player;
@@ -175,7 +177,7 @@ export const eventManager: EventManagerType = {
 				continue;
 			}
 
-			weapon.activate("passive", key, value, player);
+			weapon.activate(Ability.Passive, key, value, player);
 		}
 
 		game.triggerEventListeners(key, value, player);
@@ -219,7 +221,7 @@ export const eventManager: EventManagerType = {
 			}
 
 			if (quest.next) {
-				new Card(quest.next, player).activate("cast");
+				new Card(quest.next, player).activate(Ability.Cast);
 			}
 		}
 
@@ -283,7 +285,7 @@ export const eventManager: EventManagerType = {
 	 */
 	addHistory(key, value, player): void {
 		if (!this.history[game.turn]) {
-			this.history[game.turn] = [["GameLoop", `Init ${key}`, player]];
+			this.history[game.turn] = [[Event.GameLoop, `Init ${key}`, player]];
 		}
 
 		this.history[game.turn].push([key, value, player]);
@@ -299,7 +301,7 @@ export const eventManager: EventManagerType = {
 	 * @returns Success
 	 */
 	broadcastDummy(player): boolean {
-		return this.broadcast("Dummy", undefined, player, false);
+		return this.broadcast(Event.Dummy, undefined, player, false);
 	},
 
 	/**

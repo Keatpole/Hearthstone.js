@@ -4,12 +4,12 @@
  */
 import util from "node:util";
 import { Card, createGame } from "@Game/internal.js";
-import type {
-	CardClass,
-	CardClassNoNeutral,
-	CardType,
-	CommandList,
-	GameConfig,
+import {
+	Class,
+	type CommandList,
+	type GameConfig,
+	Rarity,
+	type Type,
 } from "@Game/types.js";
 
 const { game, player1 } = createGame();
@@ -18,7 +18,7 @@ const { config } = game;
 const classes = game.functions.card.getClasses();
 const cards = Card.all(game.config.advanced.dcShowUncollectible);
 
-let chosenClass: CardClassNoNeutral;
+let chosenClass: Class;
 let filteredCards: Card[] = [];
 
 let deck: Card[] = [];
@@ -37,7 +37,7 @@ type Settings = {
 		page: number;
 		maxPage?: number;
 		cpp: number;
-		class?: CardClass;
+		class?: Class;
 	};
 	sort: {
 		type: keyof Card;
@@ -106,21 +106,23 @@ function watermark(): void {
 /**
  * Asks the user which class to choose, and returns it.
  */
-function askClass(): CardClassNoNeutral {
+function askClass(): Class {
 	watermark();
 
 	let heroClass = game.input(
 		`What class do you want to choose?\n${classes.join(", ")}\n`,
 	);
 	if (heroClass) {
-		heroClass = game.lodash.startCase(heroClass);
+		heroClass = game.lodash.startCase(heroClass).replaceAll(" ", "");
 	}
 
-	if (!classes.includes(heroClass as CardClassNoNeutral)) {
+	const actualHeroClass = Class[heroClass as keyof typeof Class];
+
+	if (!classes.includes(actualHeroClass)) {
 		return askClass();
 	}
 
-	player1.heroClass = heroClass as CardClass;
+	player1.heroClass = actualHeroClass;
 
 	if (player1.canUseRunes()) {
 		runes = "";
@@ -142,7 +144,7 @@ function askClass(): CardClassNoNeutral {
 		player1.runes = runes;
 	}
 
-	return heroClass as CardClassNoNeutral;
+	return actualHeroClass;
 }
 
 /**
@@ -167,7 +169,13 @@ function sortCards(_cards: Card[]): Card[] {
 	};
 
 	if (type === "rarity") {
-		const sortScores = ["Free", "Common", "Rare", "Epic", "Legendary"];
+		const sortScores = [
+			Rarity.Free,
+			Rarity.Common,
+			Rarity.Rare,
+			Rarity.Epic,
+			Rarity.Legendary,
+		];
 
 		return _cards.sort((a, b) => {
 			const scoreA = sortScores.indexOf(a.rarity);
@@ -179,8 +187,8 @@ function sortCards(_cards: Card[]): Card[] {
 
 	if (["name", "type"].includes(type)) {
 		return _cards.sort((a, b) => {
-			let typeA: string | CardType;
-			let typeB: string | CardType;
+			let typeA: string | Type;
+			let typeB: string | Type;
 
 			if (type === "name") {
 				typeA = a.name;
@@ -1104,8 +1112,8 @@ const commands: CommandList = {
 			return false;
 		}
 
-		let heroClass = args.join(" ") as CardClass;
-		heroClass = game.lodash.startCase(heroClass) as CardClass;
+		let heroClass = args.join(" ") as Class;
+		heroClass = game.lodash.startCase(heroClass) as Class;
 
 		if (
 			!classes.includes(heroClass as CardClassNoNeutral) &&
@@ -1413,7 +1421,7 @@ const commands: CommandList = {
 			game.pause();
 		}
 
-		game.event.broadcast("Eval", code, game.player);
+		game.event.broadcast(Event.Eval, code, game.player);
 		return true;
 	},
 };

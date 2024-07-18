@@ -4,13 +4,15 @@
  */
 import { type Ai, Card } from "@Game/internal.js";
 
-import type {
-	CardClass,
-	CardType,
-	EventKey,
-	QuestCallback,
-	QuestType,
-	Target,
+import {
+	Ability,
+	Class,
+	Event,
+	Keyword,
+	type QuestCallback,
+	type QuestType,
+	type Target,
+	Type,
 } from "@Game/types.js";
 
 export class Player {
@@ -198,7 +200,7 @@ export class Player {
 	/**
 	 * The class the player is. This is set to either: Mage, Priest, Warlock, Warrior, ...
 	 */
-	heroClass: CardClass = "Mage";
+	heroClass: Class = Class.Mage;
 
 	/**
 	 * If the player can use their hero power.
@@ -258,7 +260,7 @@ export class Player {
 	 *
 	 * If this player's counter includes "Minion", and this player plays a Minion, it gets countered.
 	 */
-	counter: CardType[] = [];
+	counter: Type[] = [];
 
 	/**
 	 * The secrets that the player has.
@@ -493,7 +495,7 @@ export class Player {
 	addOverload(overload: number): boolean {
 		this.overload += overload;
 
-		game.event.broadcast("GainOverload", overload, this);
+		game.event.broadcast(Event.GainOverload, overload, this);
 		return true;
 	}
 
@@ -542,7 +544,7 @@ export class Player {
 			return false;
 		}
 
-		this.weapon.activate("deathrattle");
+		this.weapon.activate(Ability.Deathrattle);
 		this.attack -= this.weapon.attack ?? 0;
 
 		this.weapon.destroy();
@@ -575,7 +577,7 @@ export class Player {
 	addAttack(amount: number): boolean {
 		this.attack += amount;
 
-		game.event.broadcast("GainHeroAttack", amount, this);
+		game.event.broadcast(Event.GainHeroAttack, amount, this);
 		return true;
 	}
 
@@ -629,10 +631,10 @@ export class Player {
 
 		this.health -= actualAmount;
 
-		game.event.broadcast("TakeDamage", actualAmount, this);
+		game.event.broadcast(Event.TakeDamage, actualAmount, this);
 
 		if (!this.isAlive()) {
-			game.event.broadcast("FatalDamage", undefined, this);
+			game.event.broadcast(Event.FatalDamage, undefined, this);
 
 			// This is done to allow secrets to prevent death
 			if (!this.isAlive()) {
@@ -676,7 +678,7 @@ export class Player {
 		this.deck.push(card);
 		this.shuffleDeck();
 
-		game.event.broadcast("AddCardToDeck", card, this);
+		game.event.broadcast(Event.AddCardToDeck, card, this);
 		return true;
 	}
 
@@ -691,7 +693,7 @@ export class Player {
 	addToBottomOfDeck(card: Card): boolean {
 		this.deck.unshift(card);
 
-		game.event.broadcast("AddCardToDeck", card, this);
+		game.event.broadcast(Event.AddCardToDeck, card, this);
 		return true;
 	}
 
@@ -705,7 +707,7 @@ export class Player {
 	drawCards(amount: number): Card[] {
 		const cards: Card[] = [];
 
-		const unsuppress = game.functions.event.suppress("AddCardToHand");
+		const unsuppress = game.functions.event.suppress(Event.AddCardToHand);
 
 		let drawAmount = amount;
 		for (let i = 0; i < drawAmount; i++) {
@@ -723,16 +725,16 @@ export class Player {
 
 			// Cast on draw
 			if (
-				card.type === "Spell" &&
-				card.hasKeyword("Cast On Draw") &&
-				card.activate("cast")
+				card.type === Type.Spell &&
+				card.hasKeyword(Keyword.CastOnDraw) &&
+				card.activate(Ability.Cast)
 			) {
 				drawAmount += 1;
 				continue;
 			}
 
 			// Summon on draw
-			if (card.hasKeyword("Summon On Draw") && card.canBeOnBoard()) {
+			if (card.hasKeyword(Keyword.SummonOnDraw) && card.canBeOnBoard()) {
 				this.summon(card);
 
 				drawAmount += 1;
@@ -740,7 +742,7 @@ export class Player {
 			}
 
 			this.addToHand(card);
-			game.event.broadcast("DrawCard", card, this);
+			game.event.broadcast(Event.DrawCard, card, this);
 			cards.push(card);
 		}
 
@@ -781,17 +783,17 @@ export class Player {
 		game.functions.util.remove(this.deck, card);
 
 		if (
-			card.type === "Spell" &&
-			card.hasKeyword("Cast On Draw") &&
-			card.activate("cast")
+			card.type === Type.Spell &&
+			card.hasKeyword(Keyword.CastOnDraw) &&
+			card.activate(Ability.Cast)
 		) {
 			return undefined;
 		}
 
-		game.functions.event.withSuppressed("AddCardToHand", () =>
+		game.functions.event.withSuppressed(Event.AddCardToHand, () =>
 			this.addToHand(card),
 		);
-		game.event.broadcast("DrawCard", card, this);
+		game.event.broadcast(Event.DrawCard, card, this);
 
 		return card;
 	}
@@ -811,7 +813,7 @@ export class Player {
 
 		this.hand.push(card);
 
-		game.event.broadcast("AddCardToHand", card, this);
+		game.event.broadcast(Event.AddCardToHand, card, this);
 		return true;
 	}
 
@@ -870,18 +872,18 @@ export class Player {
 			return false;
 		}
 
-		if (this.hero.heropower?.activate("heropower") === Card.REFUND) {
+		if (this.hero.heropower?.activate(Ability.HeroPower) === Card.REFUND) {
 			return -1;
 		}
 
 		for (const card of this.board) {
-			card.activate("inspire");
+			card.activate(Ability.Inspire);
 		}
 
 		this.mana -= this.hero.heropower?.cost ?? 0;
 		this.hasUsedHeroPowerThisTurn = true;
 
-		game.event.broadcast("HeroPower", this.hero.heropower, this);
+		game.event.broadcast(Event.HeroPower, this.hero.heropower, this);
 		return true;
 	}
 
@@ -914,14 +916,14 @@ export class Player {
 	 * @returns Whether or not the player can use corpses
 	 */
 	canUseCorpses(): boolean {
-		return ["Death Knight"].includes(this.heroClass);
+		return [Class.DeathKnight].includes(this.heroClass);
 	}
 
 	/**
 	 * @returns Whether or not the player can use runes
 	 */
 	canUseRunes(): boolean {
-		return ["Death Knight"].includes(this.heroClass);
+		return [Class.DeathKnight].includes(this.heroClass);
 	}
 
 	/**
@@ -1034,11 +1036,15 @@ export class Player {
 
 			game.functions.util.remove(mulligan, card);
 
-			game.functions.event.withSuppressed("DrawCard", () => this.drawCards(1));
-			game.functions.event.withSuppressed("AddCardToDeck", () =>
+			game.functions.event.withSuppressed(Event.DrawCard, () =>
+				this.drawCards(1),
+			);
+			game.functions.event.withSuppressed(Event.AddCardToDeck, () =>
 				this.shuffleIntoDeck(card),
 			);
-			game.functions.event.withSuppressed("DiscardCard", () => card.discard());
+			game.functions.event.withSuppressed(Event.DiscardCard, () =>
+				card.discard(),
+			);
 
 			cards.push(card);
 		}
@@ -1145,7 +1151,7 @@ export class Player {
 	addQuest(
 		type: "Quest" | "Sidequest" | "Secret",
 		card: Card,
-		key: EventKey,
+		key: Event,
 		amount: number,
 		callback: QuestCallback,
 		next?: number,
@@ -1216,23 +1222,23 @@ export class Player {
 		}
 
 		for (const card of this.deck) {
-			card.activate("invoke");
+			card.activate(Ability.Invoke);
 		}
 
 		for (const card of this.hand) {
-			card.activate("invoke");
+			card.activate(Ability.Invoke);
 		}
 
 		for (const card of this.board) {
-			card.activate("invoke");
+			card.activate(Ability.Invoke);
 		}
 
 		if (this.hero.name.startsWith("Galakrond, the ")) {
-			this.hero.heropower?.activate("cast");
+			this.hero.heropower?.activate(Ability.Cast);
 		} else if (deckGalakrond) {
-			deckGalakrond.heropower?.activate("cast");
+			deckGalakrond.heropower?.activate(Ability.Cast);
 		} else if (handGalakrond) {
-			handGalakrond.heropower?.activate("cast");
+			handGalakrond.heropower?.activate(Ability.Cast);
 		}
 
 		return true;
@@ -1255,7 +1261,7 @@ export class Player {
 		let times = 0;
 		const cards: Card[] = [];
 
-		recruitList = list.filter((c) => c.type === "Minion");
+		recruitList = list.filter((c) => c.type === Type.Minion);
 		for (const card of list) {
 			if (times >= amount) {
 				continue;
@@ -1324,8 +1330,8 @@ export class Player {
 		this.getOpponent().shuffleDeck();
 
 		// Reveal them to both players
-		game.event.broadcast("RevealCard", [friendlyCard, "Joust"], this);
-		game.event.broadcast("RevealCard", [enemyCard, "Joust"], this);
+		game.event.broadcast(Event.RevealCard, [friendlyCard, "Joust"], this);
+		game.event.broadcast(Event.RevealCard, [enemyCard, "Joust"], this);
 
 		console.log("\n--- JOUST ---");
 		console.log("Yours: %s", friendlyCard.readable());

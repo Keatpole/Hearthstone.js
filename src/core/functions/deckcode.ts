@@ -1,12 +1,12 @@
 import { Card, type Player } from "@Game/internal.js";
 
-import type {
-	CardClass,
-	CardClassNoNeutral,
-	CardLike,
-	FunctionsExportDeckError,
-	GameConfig,
-	VanillaCard,
+import {
+	type CardLike,
+	Class,
+	type FunctionsExportDeckError,
+	type GameConfig,
+	Rarity,
+	type VanillaCard,
 } from "@Game/types.js";
 
 // To decode vanilla deckcodes
@@ -70,19 +70,21 @@ export const deckcodeFunctions = {
 			sep = " [";
 		}
 
-		let hero = actualCode.split(sep)[0];
+		const hero = actualCode.split(sep)[0].trim();
 
-		hero = hero.trim();
 		actualCode = sep[1] + actualCode.split(sep)[1];
 
-		if (
-			!game.functions.card.getClasses().includes(hero as CardClassNoNeutral)
-		) {
+		const heroClass =
+			Class[
+				game.lodash.startCase(hero).replaceAll(" ", "") as keyof typeof Class
+			];
+
+		if (!game.functions.card.getClasses().includes(heroClass)) {
 			panic("INVALIDHERO");
 			return;
 		}
 
-		player.heroClass = hero as CardClass;
+		player.heroClass = heroClass;
 		const runeClass = player.canUseRunes();
 
 		const addRunes = (runes: string) => {
@@ -257,7 +259,7 @@ export const deckcodeFunctions = {
 			}
 
 			if (
-				Card.fromName(cardName, game.player)?.rarity === "Legendary" &&
+				Card.fromName(cardName, game.player)?.rarity === Rarity.Legendary &&
 				amount > localSettings.decks.maxOfOneLegendary
 			) {
 				errorcode = "legendary";
@@ -389,7 +391,7 @@ export const deckcodeFunctions = {
 
 			if (
 				copies > game.config.decks.maxOfOneLegendary &&
-				card.rarity === "Legendary"
+				card.rarity === Rarity.Legendary
 			) {
 				error = {
 					msg: "TooManyLegendaryCopies",
@@ -435,24 +437,29 @@ export const deckcodeFunctions = {
 		};
 
 		// List of vanilla heroes dbfIds
-		const vanillaHeroes: { [key in CardClass]?: number } = {
-			Warrior: 7,
-			Hunter: 31,
-			Druid: 274,
-			Mage: 637,
-			Paladin: 671,
-			Priest: 813,
-			Warlock: 893,
-			Rogue: 930,
-			Shaman: 1066,
-			"Demon Hunter": 56_550,
-			"Death Knight": 78_065,
+		const vanillaHeroes: { [key in Class]?: number } = {
+			[Class.Warrior]: 7,
+			[Class.Hunter]: 31,
+			[Class.Druid]: 274,
+			[Class.Mage]: 637,
+			[Class.Paladin]: 671,
+			[Class.Priest]: 813,
+			[Class.Warlock]: 893,
+			[Class.Rogue]: 930,
+			[Class.Shaman]: 1066,
+			[Class.DemonHunter]: 56_550,
+			[Class.DeathKnight]: 78_065,
 		};
 
 		const codeSplit = code.split(/[[/]/);
-		const heroClass = codeSplit[0].trim();
+		const heroClass =
+			Class[
+				game.lodash
+					.startCase(codeSplit[0].trim())
+					.replaceAll(" ", "") as keyof typeof Class
+			];
 
-		const heroClassId = vanillaHeroes[heroClass as CardClass];
+		const heroClassId = vanillaHeroes[heroClass];
 		if (!heroClassId) {
 			throw new Error(`Invalid hero class: ${heroClass}`);
 		}
@@ -597,7 +604,7 @@ export const deckcodeFunctions = {
 			(a) => a.dbfId === deck.heroes[0],
 		)?.cardClass;
 		let heroClassName = game.lodash.capitalize(
-			heroClass?.toString() ?? game.player2.heroClass,
+			heroClass?.toString() ?? Class[game.player2.heroClass],
 		);
 
 		// Wtf hearthstone?
@@ -694,7 +701,12 @@ export const deckcodeFunctions = {
 		// Generate runes
 		let runes = "";
 
-		player.heroClass = heroClassName as CardClass;
+		player.heroClass =
+			Class[
+				game.lodash
+					.startCase(heroClassName)
+					.replaceAll(" ", "") as keyof typeof Class
+			];
 
 		if (player.canUseRunes()) {
 			for (const cardAmountObject of newDeck) {
